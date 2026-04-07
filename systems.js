@@ -10,6 +10,7 @@
     { id: "wii", name: "Wii", lowGb: 0.8, avgGb: 2.5, highGb: 4.5, performanceTier: "high", performanceWeight: 3.2, dualScreenWeight: 0 },
     { id: "wii-u", name: "Wii U", lowGb: 6.0, avgGb: 14.0, highGb: 22.0, performanceTier: "enthusiast", performanceWeight: 4.2, dualScreenWeight: 0 },
     { id: "switch", name: "Switch", lowGb: 4.0, avgGb: 10.0, highGb: 18.0, performanceTier: "enthusiast", performanceWeight: 4.8, dualScreenWeight: 0 },
+    { id: "xbox", name: "Xbox", lowGb: 2.0, avgGb: 5.0, highGb: 8.0, performanceTier: "enthusiast", performanceWeight: 4.9, dualScreenWeight: 0 },
     { id: "ps1", name: "PS1", lowGb: 0.3, avgGb: 0.6, highGb: 1.0, performanceTier: "light", performanceWeight: 1.2, dualScreenWeight: 0 },
     { id: "ps2", name: "PS2", lowGb: 1.5, avgGb: 2.6, highGb: 4.0, performanceTier: "high", performanceWeight: 3.1, dualScreenWeight: 0 },
     { id: "ps3", name: "PS3", lowGb: 8.0, avgGb: 18.0, highGb: 35.0, performanceTier: "enthusiast", performanceWeight: 4.6, dualScreenWeight: 0 },

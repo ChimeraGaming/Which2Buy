@@ -46,7 +46,9 @@
     { id: "canyon-dust", name: "Canyon Dust" },
     { id: "signal-red", name: "Signal Red" },
     { id: "sea-glass", name: "Sea Glass" },
-    { id: "midnight-grid", name: "Midnight Grid" }
+    { id: "midnight-grid", name: "Midnight Grid" },
+    { id: "starry-night", name: "Starry Night" },
+    { id: "github-dark", name: "GitHub Dark" }
   ];
 
   const appDefaults = {
@@ -54,6 +56,8 @@
     ownsDevice: "no",
     currentDeviceId: "",
     formFactor: "no-preference",
+    useSdCard: "no",
+    sdCardSizeGb: 512,
     futureProofBias: 50,
     advancedMode: false,
     selectedSystems: [],

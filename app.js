@@ -34,6 +34,8 @@
     elements.quizForm = document.getElementById("quizForm");
     elements.currentDeviceField = document.getElementById("currentDeviceField");
     elements.currentDeviceSelect = document.getElementById("currentDeviceSelect");
+    elements.sdCardSizeField = document.getElementById("sdCardSizeField");
+    elements.sdCardSizeSelect = document.getElementById("sdCardSizeSelect");
     elements.futureProofRange = document.getElementById("futureProofRange");
     elements.futureProofLabel = document.getElementById("futureProofLabel");
     elements.advancedModeToggle = document.getElementById("advancedModeToggle");
@@ -112,6 +114,8 @@
     normalized.formFactor = ["horizontal", "clamshell", "no-preference"].includes(rawState.formFactor)
       ? rawState.formFactor
       : normalized.formFactor;
+    normalized.useSdCard = rawState.useSdCard === "yes" ? "yes" : "no";
+    normalized.sdCardSizeGb = normalizeSdCardSize(rawState.sdCardSizeGb, normalized.sdCardSizeGb);
     normalized.futureProofBias = snapRangeValue(rawState.futureProofBias, normalized.futureProofBias);
     normalized.advancedMode = Boolean(rawState.advancedMode);
     normalized.selectedSystems = validSelected;
@@ -199,8 +203,24 @@
       updateDerivedUi(false);
     });
 
+    document.getElementById("sdCardChoices").addEventListener("change", (event) => {
+      const target = event.target;
+      if (target.name !== "useSdCard") {
+        return;
+      }
+
+      state.useSdCard = target.value === "yes" ? "yes" : "no";
+      toggleSdCardField();
+      updateDerivedUi(false);
+    });
+
     elements.currentDeviceSelect.addEventListener("change", (event) => {
       state.currentDeviceId = event.target.value;
+      updateDerivedUi(false);
+    });
+
+    elements.sdCardSizeSelect.addEventListener("change", (event) => {
+      state.sdCardSizeGb = normalizeSdCardSize(event.target.value, state.sdCardSizeGb);
       updateDerivedUi(false);
     });
 
@@ -259,6 +279,7 @@
 
     const ownsDeviceRadio = document.querySelector(`input[name="ownsDevice"][value="${state.ownsDevice}"]`);
     const formFactorRadio = document.querySelector(`input[name="formFactor"][value="${state.formFactor}"]`);
+    const sdCardRadio = document.querySelector(`input[name="useSdCard"][value="${state.useSdCard}"]`);
 
     if (ownsDeviceRadio) {
       ownsDeviceRadio.checked = true;
@@ -268,7 +289,12 @@
       formFactorRadio.checked = true;
     }
 
+    if (sdCardRadio) {
+      sdCardRadio.checked = true;
+    }
+
     elements.currentDeviceSelect.value = state.currentDeviceId;
+    elements.sdCardSizeSelect.value = String(state.sdCardSizeGb);
     elements.futureProofRange.value = String(state.futureProofBias);
     elements.futureProofLabel.textContent = RULES.futureProofLabel(state.futureProofBias);
     elements.advancedModeToggle.checked = state.advancedMode;
@@ -279,6 +305,7 @@
     elements.safetyBufferInput.value = String(state.advanced.safetyBufferPct);
 
     toggleCurrentDeviceField();
+    toggleSdCardField();
     toggleAdvancedPanel();
   }
 
@@ -296,6 +323,10 @@
 
   function toggleAdvancedPanel() {
     elements.advancedPanel.hidden = !state.advancedMode;
+  }
+
+  function toggleSdCardField() {
+    elements.sdCardSizeField.hidden = state.useSdCard !== "yes";
   }
 
   function handleAdvancedInput(key, inputElement, min, max) {
@@ -728,6 +759,9 @@
     const minimumLikely = (libraryTotals.low + osReserve + appReserve + cacheLow) * (1 + (safetyLow / 100));
     const expectedAverage = (libraryTotals.avg + osReserve + appReserve + cacheAvg) * (1 + (safetyBase / 100));
     const comfortableUpper = (libraryTotals.high + osReserve + appReserve + cacheHigh) * (1 + (safetyHigh / 100));
+    const sdCardSizeGb = state.useSdCard === "yes" ? state.sdCardSizeGb : 0;
+    const internalCoreNeed = osReserve + appReserve + cacheAvg + Math.min(24, (libraryTotals.avg * 0.12));
+    const internalComfortNeed = osReserve + appReserve + cacheHigh + Math.min(32, (libraryTotals.high * 0.15));
 
     return {
       libraryTotals,
@@ -741,6 +775,9 @@
         safetyBase,
         safetyHigh
       },
+      sdCardSizeGb,
+      internalCoreNeed,
+      internalComfortNeed,
       minimumLikely,
       expectedAverage,
       comfortableUpper
@@ -831,6 +868,7 @@
       const strengths = [];
       const cautions = [];
       let score = 0;
+      const totalStoragePool = getDeviceStoragePool(device, storage);
 
       const computeDelta = device.computeRank - performance.computeFloorRank;
       if (computeDelta < 0) {
@@ -859,13 +897,18 @@
         cautions.push("Drops below the minimum RAM tier.");
       }
 
-      if (device.storage >= storage.comfortableUpper) {
+      if (device.storage < storage.internalCoreNeed) {
+        score -= 24;
+        cautions.push("Internal storage is tight even before leaning on an SD card.");
+      }
+
+      if (totalStoragePool >= storage.comfortableUpper) {
         score += 28;
-        strengths.push("Internal storage covers the comfortable upper estimate.");
-      } else if (device.storage >= storage.expectedAverage) {
+        strengths.push(storage.sdCardSizeGb ? "Your total storage pool covers the comfortable upper estimate." : "Internal storage covers the comfortable upper estimate.");
+      } else if (totalStoragePool >= storage.expectedAverage) {
         score += 16;
-        cautions.push("Average use fits internally, but the upper range may lean on a card.");
-      } else if (device.storage >= storage.minimumLikely) {
+        cautions.push(storage.sdCardSizeGb ? "Current planned storage fits, but the upper range may still feel tight." : "Average use fits internally, but the upper range may lean on a card.");
+      } else if (totalStoragePool >= storage.minimumLikely) {
         score += 8;
         cautions.push("Meets the likely minimum, but you will manage installs sooner.");
       } else {
@@ -873,23 +916,27 @@
         cautions.push("Internal storage falls short of the likely minimum.");
       }
 
+      const clearsCoreFloor = device.computeRank >= performance.computeFloorRank
+        && device.ram >= performance.minimumRam;
+      const formFactorWeight = clearsCoreFloor ? 1.45 : 1;
+
       if (state.formFactor === "horizontal") {
         if (device.formFactor === "horizontal") {
-          score += 12;
-          strengths.push("Matches your horizontal preference.");
+          score += Math.round(14 * formFactorWeight);
+          strengths.push(clearsCoreFloor ? "Matches your horizontal preference after clearing the core fit." : "Matches your horizontal preference.");
         } else {
-          score -= 6;
-          cautions.push("Misses your preferred form factor.");
+          score -= Math.round(7 * formFactorWeight);
+          cautions.push(clearsCoreFloor ? "Misses your preferred form factor on an otherwise viable fit." : "Misses your preferred form factor.");
         }
       }
 
       if (state.formFactor === "clamshell") {
         if (device.formFactor === "clamshell") {
-          score += 18;
-          strengths.push("Matches your clamshell preference.");
+          score += Math.round(18 * formFactorWeight);
+          strengths.push(clearsCoreFloor ? "Matches your clamshell preference after clearing the core fit." : "Matches your clamshell preference.");
         } else {
-          score -= 8;
-          cautions.push("Misses your preferred form factor.");
+          score -= Math.round(9 * formFactorWeight);
+          cautions.push(clearsCoreFloor ? "Misses your preferred form factor on an otherwise viable fit." : "Misses your preferred form factor.");
         }
       }
 
@@ -934,10 +981,16 @@
     const minimumPool = scored.filter((item) => item.meetsMinimumCore);
     const bestPool = recommendedPool.length ? recommendedPool : minimumPool.length ? minimumPool : scored;
     const recommended = bestPool[0] || null;
+    const optionalFitPool = (minimumPool.length ? minimumPool : scored).filter((candidate) => {
+      return getDeviceStoragePool(candidate.device, storage) >= storage.expectedAverage
+        && candidate.device.storage >= storage.internalCoreNeed
+        && (!recommended || candidate.device.id !== recommended.device.id);
+    });
 
     return {
       scored,
       recommended,
+      optionalFit: getOptionalFit(recommended, optionalFitPool),
       budgetAlternative: getBudgetAlternative(recommended, minimumPool.length ? minimumPool : scored),
       futureProofOption: getFutureProofOption(recommended, minimumPool.length ? minimumPool : scored, performance.computeFloorRank),
       topCandidates: (minimumPool.length ? minimumPool : scored).slice(0, 3)
@@ -953,7 +1006,8 @@
       && currentDevice.ram >= performance.minimumRam;
     const recommendedFit = currentDevice.computeRank >= performance.computeFloorRank
       && currentDevice.ram >= performance.recommendedRam
-      && currentDevice.storage >= storage.expectedAverage;
+      && getDeviceStoragePool(currentDevice, storage) >= storage.expectedAverage
+      && currentDevice.storage >= storage.internalCoreNeed;
 
     let improvementScore = Math.max(0, recommendedCandidate.device.computeRank - currentDevice.computeRank) * 2;
     if ((recommendedCandidate.device.ram - currentDevice.ram) >= 4) {
@@ -963,7 +1017,7 @@
       improvementScore += 1;
     }
     if (state.formFactor !== "no-preference" && currentDevice.formFactor !== state.formFactor && recommendedCandidate.device.formFactor === state.formFactor) {
-      improvementScore += 1;
+      improvementScore += 2;
     }
     if (!currentDevice.dualScreen && recommendedCandidate.device.dualScreen && dualScreenNeed > 0.35) {
       improvementScore += 1;
@@ -1091,9 +1145,11 @@
     const recommendedBody = analysis.keepCurrent && analysis.currentComparison
       ? `${analysis.currentComparison.currentDevice.name} already covers your current needs well enough. If you still want to buy a new device, ${recommendedDevice.name} is the closest current fit.`
       : buildRecommendedBody(analysis, recommendedCandidate);
+    const optionalFitCopy = buildOptionalFitCopy(analysis.scoring.optionalFit, analysis.storage);
+    const sdCardCopy = buildSdCardCopy(analysis.storage);
     const performancePercent = getHeadroomPercent(displayDevice.computeRank, analysis.performance.computeFloorRank);
     const ramPercent = getFitPercent(displayDevice.ram, analysis.performance.recommendedRam);
-    const storagePercent = getFitPercent(displayDevice.storage, analysis.storage.comfortableUpper);
+    const storagePercent = getFitPercent(getDeviceStoragePool(displayDevice, analysis.storage), analysis.storage.comfortableUpper);
 
     elements.resultsContent.innerHTML = `
       <div class="scorecard-story">
@@ -1109,6 +1165,8 @@
                 <span class="story-chip">${displayDevice.ram}GB RAM</span>
                 <span class="story-chip">${displayDevice.storage}GB storage</span>
               </div>
+              ${optionalFitCopy ? `<p class="story-subnote">${escapeHtml(optionalFitCopy)}</p>` : ""}
+              ${sdCardCopy ? `<p class="story-subnote">${escapeHtml(sdCardCopy)}</p>` : ""}
             </div>
             <div class="story-burst">
               <span class="story-burst-label">Fit Score</span>
@@ -1146,7 +1204,7 @@
             <div class="story-meter-grid">
               ${renderStoryMeterCard("Performance headroom", performancePercent, `The device clears a ${getComputeFloorLabel(analysis.performance.computeFloorRank).toLowerCase()} requirement.`)}
               ${renderStoryMeterCard("RAM fit", ramPercent, `Target is ${analysis.performance.recommendedRam}GB. Minimum acceptable is ${analysis.performance.minimumRam}GB.`)}
-              ${renderStoryMeterCard("Storage comfort", storagePercent, `Comfort target is ${formatSize(analysis.storage.comfortableUpper)}.`)}
+              ${renderStoryMeterCard("Storage comfort", storagePercent, `Comfort target is ${formatSize(analysis.storage.comfortableUpper)} and the current storage pool is ${formatSize(getDeviceStoragePool(displayDevice, analysis.storage))}.`)}
             </div>
           </div>
         </section>
@@ -1233,6 +1291,22 @@
     }
 
     return "Balanced pick";
+  }
+
+  function buildOptionalFitCopy(optionalFit, storage) {
+    if (!optionalFit) {
+      return "";
+    }
+
+    return `Optional fit: ${optionalFit.device.name} works for your current planned storage around ${formatSize(storage.expectedAverage)}, but it does not target the comfortable upper estimate.`;
+  }
+
+  function buildSdCardCopy(storage) {
+    if (!storage.sdCardSizeGb) {
+      return "";
+    }
+
+    return `Storage profile includes a ${formatSdCardSize(storage.sdCardSizeGb)} SD card. Total storage fit uses internal plus removable space, but the internal model still checks for core on-device breathing room.`;
   }
 
   function renderStoryMetricCard(label, value, copy) {
@@ -1369,11 +1443,15 @@
   function buildStorageNote(storage) {
     const maxCurrentStorage = Math.max(...recommendableDevices.map((device) => device.storage));
     if (storage.comfortableUpper > maxCurrentStorage) {
-      return "Your comfortable upper estimate is larger than the biggest current internal option. Plan on using a card or rotating installs even on the top storage variants.";
+      return storage.sdCardSizeGb
+        ? "Your comfortable upper estimate is larger than the biggest current internal option, so this assumes removable storage is part of the plan."
+        : "Your comfortable upper estimate is larger than the biggest current internal option. Plan on using a card or rotating installs even on the top storage variants.";
     }
 
     if (storage.expectedAverage > 512) {
-      return "This library is large enough that higher storage variants make sense. Lower storage models can still work, but you will lean on external storage much sooner.";
+      return storage.sdCardSizeGb
+        ? "This library is large enough that the SD card meaningfully helps, but lower internal storage models can still feel tighter for day to day use."
+        : "This library is large enough that higher storage variants make sense. Lower storage models can still work, but you will lean on external storage much sooner.";
     }
 
     return "These numbers already include OS room, app reserve, cache growth, and a safety buffer. They are meant to reflect real use, not a bare minimum spreadsheet fit.";
@@ -1389,11 +1467,14 @@
     lines.push(selectedSystemText);
     lines.push(`The storage model points to ${formatSize(analysis.storage.expectedAverage)} as the expected average and ${formatSize(analysis.storage.comfortableUpper)} as the comfortable upper range.`);
     lines.push(`The RAM model lands on ${analysis.performance.recommendedRam}GB, with ${analysis.performance.minimumRam}GB as the minimum acceptable tier.`);
+    if (analysis.storage.sdCardSizeGb) {
+      lines.push(`This run includes a ${formatSdCardSize(analysis.storage.sdCardSizeGb)} SD card, but the tool still checks that internal storage is not overly cramped.`);
+    }
 
     if (state.formFactor === "clamshell") {
-      lines.push("Your clamshell preference gets real weight, but only after the device clears the performance and RAM floor.");
+      lines.push("Your clamshell preference now gets a stronger boost once a device already clears the performance and RAM floor.");
     } else if (state.formFactor === "horizontal") {
-      lines.push("Your horizontal preference helps break ties, but it does not override hard requirements.");
+      lines.push("Your horizontal preference now has a stronger say among devices that already clear the hard requirements.");
     }
 
     if (state.futureProofBias >= 70) {
@@ -1527,6 +1608,26 @@
     return sorted.find((candidate) => !recommended || candidate.device.id !== recommended.device.id) || sorted[0];
   }
 
+  function getOptionalFit(recommended, pool) {
+    if (!pool.length) {
+      return null;
+    }
+
+    const sorted = [...pool].sort((left, right) => {
+      if (left.device.priceIndex !== right.device.priceIndex) {
+        return left.device.priceIndex - right.device.priceIndex;
+      }
+
+      return right.score - left.score;
+    });
+
+    return sorted.find((candidate) => !recommended || candidate.device.id !== recommended.device.id) || null;
+  }
+
+  function getDeviceStoragePool(device, storage) {
+    return device.storage + (storage.sdCardSizeGb || 0);
+  }
+
   function getFutureProofOption(recommended, pool, computeFloorRank) {
     if (!pool.length) {
       return recommended;
@@ -1625,6 +1726,8 @@
       ownsDevice: state.ownsDevice,
       currentDeviceId: state.currentDeviceId,
       formFactor: state.formFactor,
+      useSdCard: state.useSdCard,
+      sdCardSizeGb: state.sdCardSizeGb,
       futureProofBias: state.futureProofBias,
       advancedMode: state.advancedMode,
       selectedSystems: state.selectedSystems,
@@ -1659,6 +1762,9 @@
     lines.push(`Recommended Device: ${analysis.keepCurrent && analysis.currentComparison ? `Keep your current ${analysis.currentComparison.currentDevice.name}` : recommendedCandidate.device.name}`);
     lines.push(`Estimated RAM Need: ${analysis.performance.recommendedRam}GB recommended, ${analysis.performance.minimumRam}GB minimum acceptable`);
     lines.push(`Estimated Storage Need: ${formatSize(analysis.storage.minimumLikely)} minimum likely, ${formatSize(analysis.storage.expectedAverage)} expected average, ${formatSize(analysis.storage.comfortableUpper)} comfortable upper`);
+    if (analysis.storage.sdCardSizeGb) {
+      lines.push(`SD Card: ${formatSdCardSize(analysis.storage.sdCardSizeGb)} included in storage fit`);
+    }
     lines.push("");
     lines.push("System Breakdown");
 
@@ -1739,6 +1845,28 @@
       return fallback;
     }
     return RULES.clamp(Math.round(numeric), min, max);
+  }
+
+  function normalizeSdCardSize(value, fallback) {
+    const allowed = [128, 256, 512, 1024, 2048];
+    const numeric = Number(value);
+    if (allowed.indexOf(numeric) === -1) {
+      return fallback;
+    }
+
+    return numeric;
+  }
+
+  function formatSdCardSize(valueGb) {
+    if (valueGb === 1024) {
+      return "1TB";
+    }
+
+    if (valueGb === 2048) {
+      return "2TB";
+    }
+
+    return `${valueGb}GB`;
   }
 
   function getRoleIntensity(usageBand) {

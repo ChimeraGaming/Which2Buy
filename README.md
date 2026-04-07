@@ -1,0 +1,53 @@
+# Which AYN Device Should I Buy?
+
+Whether you are buying your first AYN handheld or thinking about an upgrade, here is a tool I made for you and me.
+
+This project is a simple GitHub Pages web app that helps figure out which AYN device makes the most sense for your actual use.
+
+## What It Does
+
+- Lets you pick the systems you actually care about
+- Estimates library storage needs
+- Factors in RAM and performance tiers
+- Takes form factor preference into account
+- Checks if an SD card will be used
+- Compares against your current AYN device if you already own one
+- Shows a best fit, optional fit, budget alternative, and future proof option
+- Explains when an upgrade is not worth it
+
+## Included Files
+
+- `index.html`
+- `styles.css`
+- `app.js`
+- `devices.js`
+- `systems.js`
+- `rules.js`
+
+## Run It Locally
+
+Open PowerShell in this folder and run:
+
+```powershell
+py -m http.server 8000
+```
+
+Then open:
+
+```text
+http://localhost:8000
+```
+
+## GitHub Pages
+
+If GitHub Pages is enabled for this repo, the live page should be:
+
+```text
+https://chimeragaming.github.io/Which2Buy/
+```
+
+## Notes
+
+- The tool uses local config files for supported devices and systems
+- It is meant to be honest, not just push the most expensive model
+- Xbox and PS3 are still very early use cases and should not be the only reason to buy a device

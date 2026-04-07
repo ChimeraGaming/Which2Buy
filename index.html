@@ -15,7 +15,10 @@
     <header class="hero panel">
       <div class="hero-copy">
         <p class="eyebrow">Config driven handheld picker</p>
-        <h1>Which AYN Device Should I Buy?</h1>
+        <div class="hero-title-row">
+          <h1>Which AYN Device Should I Buy?</h1>
+          <span class="version-badge">v.1.1</span>
+        </div>
         <p class="subtitle">
           Transparent recommendations for Odin, Thor, and legacy AYN hardware.
           It shows the best fit, the minimum acceptable option, and when staying with your current device makes more sense.
@@ -26,6 +29,12 @@
           <span>Theme</span>
           <select id="themeSelect" aria-label="Theme"></select>
         </label>
+        <a
+          class="secondary-button"
+          href="https://github.com/ChimeraGaming/Which2Buy/issues"
+          target="_blank"
+          rel="noreferrer"
+        >Report Issue</a>
         <button id="shareButton" class="secondary-button" type="button">Copy Share Link</button>
         <button id="exportButton" class="secondary-button" type="button">Export Results</button>
       </div>
@@ -86,7 +95,9 @@
             </div>
             <div id="systemSelector" class="system-selector" aria-live="polite"></div>
             <p class="hint-text">
-              Pick the systems you actually plan to keep installed. PC uses exact sizes instead of averages.
+              Pick the systems you actually plan to keep installed.<br>
+              PC uses exact sizes instead of averages.<br>
+              Xbox &amp; PS3 are highly alpha stage atm (DO NOT BUY IF YOU ONLY PLAN TO USE THESE)
             </p>
           </section>
 
@@ -96,6 +107,37 @@
               <h2>Library Details</h2>
             </div>
             <div id="systemCards" class="system-cards"></div>
+          </section>
+
+          <section class="section-block">
+            <div class="section-heading">
+              <p class="section-kicker">Storage</p>
+              <h2>SD Card</h2>
+            </div>
+            <div class="choice-row" id="sdCardChoices">
+              <label class="choice-card">
+                <input type="radio" name="useSdCard" value="no">
+                <span>No SD card planned</span>
+              </label>
+              <label class="choice-card">
+                <input type="radio" name="useSdCard" value="yes">
+                <span>Yes, I will use one</span>
+              </label>
+            </div>
+            <div class="field" id="sdCardSizeField" hidden>
+              <label for="sdCardSizeSelect">SD card size</label>
+              <select id="sdCardSizeSelect">
+                <option value="128">128GB</option>
+                <option value="256">256GB</option>
+                <option value="512">512GB</option>
+                <option value="1024">1TB</option>
+                <option value="2048">2TB</option>
+              </select>
+            </div>
+            <p class="hint-text">
+              User reports confirm 2TB works despite official AYN staff and engineers stating 1TB is max.<br>
+              Read speeds are capped at the hardware level around 60 to 80 MB/s, confirmed by multiple user tests and AYN engineers.
+            </p>
           </section>
 
           <section class="section-block slider-block">
@@ -179,6 +221,39 @@
             <div class="empty-state">
               Pick a few systems and enter your library details to generate a recommendation.
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel changelog-panel" id="changelogSection">
+        <div class="results-frame">
+          <div class="section-heading compact-heading">
+            <p class="section-kicker">Updates</p>
+            <h2>Changelog</h2>
+          </div>
+          <div class="changelog-list">
+            <details class="changelog-item" open>
+              <summary>v.1.1</summary>
+              <div class="changelog-body">
+                <p>The results page now reads like a shareable scorecard instead of a plain block of cards.</p>
+                <p>Form factor preference now has more influence once a device already clears the real performance and RAM floor.</p>
+                <p>Best fit can now show an optional fit based on your current planned storage instead of the comfortable upper target.</p>
+                <p>Starry Night and GitHub Dark were added to the theme list.</p>
+                <p>SD card support was added with preset size options and storage fit now accounts for that extra room.</p>
+                <p>The recommendation still does not let form factor override a device that simply is not strong enough.</p>
+                <p>Xbox was added to the supported system list.</p>
+                <p>A changelog section was added so updates are easy to read without digging through files.</p>
+              </div>
+            </details>
+
+            <details class="changelog-item">
+              <summary>v.1.0</summary>
+              <div class="changelog-body">
+                <p>Initial release of the AYN handheld recommendation tool.</p>
+                <p>Added config driven systems, device data, live storage estimates, RAM tier logic, upgrade checks, themes, local save, share links, and export.</p>
+                <p>The app recommends a best fit, shows a minimum acceptable option, and explains when an upgrade is not needed.</p>
+              </div>
+            </details>
           </div>
         </div>
       </section>
