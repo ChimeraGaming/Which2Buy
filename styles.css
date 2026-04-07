@@ -89,44 +89,24 @@ body[data-theme="midnight-grid"] {
   --danger: #ff7f7f;
 }
 
-body[data-theme="starry-night"] {
-  color-scheme: dark;
-  --bg-1: #091126;
-  --bg-2: #244a8c;
-  --bg-3: #15335e;
-  --panel: rgba(12, 19, 45, 0.82);
-  --panel-strong: rgba(14, 22, 54, 0.94);
-  --text: #f4ebce;
-  --muted: #bbc9df;
-  --accent: #f3c54a;
-  --accent-strong: #d99416;
-  --accent-soft: rgba(243, 197, 74, 0.14);
-  --accent-2: #7aa7ef;
-  --line: rgba(201, 214, 242, 0.16);
-  --shadow: 0 28px 70px rgba(0, 0, 0, 0.42);
-  --success: #8ed5b4;
-  --warning: #f4cb76;
-  --danger: #ff9a87;
-}
-
 body[data-theme="alaska"] {
   color-scheme: dark;
-  --bg-1: #03101c;
-  --bg-2: #0d3148;
-  --bg-3: #195569;
-  --panel: rgba(7, 21, 35, 0.84);
-  --panel-strong: rgba(9, 26, 43, 0.95);
-  --text: #eff9ff;
-  --muted: #b5cad5;
-  --accent: #5cf0a8;
-  --accent-strong: #8ef8c7;
-  --accent-soft: rgba(92, 240, 168, 0.16);
-  --accent-2: #ed77d0;
-  --line: rgba(166, 222, 244, 0.16);
-  --shadow: 0 28px 72px rgba(0, 0, 0, 0.44);
-  --success: #7df2bc;
-  --warning: #f6bae9;
-  --danger: #ff9bc5;
+  --bg-1: #020617;
+  --bg-2: #0b1a3a;
+  --bg-3: #1e293b;
+  --panel: rgba(4, 11, 22, 0.84);
+  --panel-strong: rgba(6, 15, 29, 0.95);
+  --text: #ecf7ff;
+  --muted: #b1c6d8;
+  --accent: #00ff9f;
+  --accent-strong: #38bdf8;
+  --accent-soft: rgba(0, 255, 159, 0.15);
+  --accent-2: #a78bfa;
+  --line: rgba(116, 183, 229, 0.16);
+  --shadow: 0 28px 72px rgba(0, 0, 0, 0.48);
+  --success: #22c55e;
+  --warning: #a78bfa;
+  --danger: #38bdf8;
 }
 
 body[data-theme="biohazard"] {
@@ -148,47 +128,6 @@ body[data-theme="biohazard"] {
   --warning: #ffd75f;
   --danger: #ff8fda;
   --button-text: #122405;
-}
-
-body[data-theme="cyberpunk-2077"] {
-  color-scheme: dark;
-  --bg-1: #040711;
-  --bg-2: #0d2441;
-  --bg-3: #381142;
-  --panel: rgba(8, 12, 24, 0.84);
-  --panel-strong: rgba(10, 16, 32, 0.95);
-  --text: #f7fcff;
-  --muted: #9eb9cb;
-  --accent: #ffe24f;
-  --accent-strong: #ffbf00;
-  --accent-soft: rgba(255, 226, 79, 0.14);
-  --accent-2: #38e4ff;
-  --line: rgba(86, 216, 255, 0.2);
-  --shadow: 0 28px 74px rgba(0, 0, 0, 0.45);
-  --success: #5bf3b0;
-  --warning: #ffd86b;
-  --danger: #ff71a5;
-  --button-text: #2e2200;
-}
-
-body[data-theme="github-dark"] {
-  color-scheme: dark;
-  --bg-1: #1e1e1e;
-  --bg-2: #202225;
-  --bg-3: #252526;
-  --panel: rgba(31, 31, 31, 0.9);
-  --panel-strong: rgba(37, 37, 38, 0.96);
-  --text: #d4d4d4;
-  --muted: #8b949e;
-  --accent: #569cd6;
-  --accent-strong: #9cdcfe;
-  --accent-soft: rgba(86, 156, 214, 0.16);
-  --accent-2: #ce9178;
-  --line: rgba(74, 74, 74, 0.88);
-  --shadow: 0 24px 64px rgba(0, 0, 0, 0.42);
-  --success: #6a9955;
-  --warning: #d7ba7d;
-  --danger: #f44747;
 }
 
 body[data-theme="snes-rainbow"] {
@@ -221,11 +160,8 @@ body[data-theme="snes-rainbow"] {
 
 body[data-theme="signal-red"],
 body[data-theme="midnight-grid"],
-body[data-theme="starry-night"],
 body[data-theme="alaska"],
-body[data-theme="biohazard"],
-body[data-theme="cyberpunk-2077"],
-body[data-theme="github-dark"] {
+body[data-theme="biohazard"] {
   --surface-1: rgba(255, 255, 255, 0.04);
   --surface-2: rgba(255, 255, 255, 0.06);
   --surface-3: rgba(255, 255, 255, 0.08);
@@ -276,34 +212,9 @@ body[data-theme="signal-red"] {
     linear-gradient(180deg, #040102 0%, #170305 42%, #42070d 100%);
 }
 
-body[data-theme="starry-night"] {
-  background:
-    radial-gradient(circle at 89% 12%, rgba(250, 224, 128, 0.96) 0 1.9%, rgba(250, 224, 128, 0.28) 2% 5.1%, rgba(250, 224, 128, 0.08) 5.2% 7.8%, transparent 7.9%),
-    radial-gradient(circle at 14% 16%, rgba(246, 227, 158, 0.9) 0 0.42%, rgba(246, 227, 158, 0.14) 0.43% 1.4%, transparent 1.5%),
-    radial-gradient(circle at 26% 11%, rgba(248, 221, 132, 0.84) 0 0.48%, rgba(248, 221, 132, 0.12) 0.49% 1.5%, transparent 1.6%),
-    radial-gradient(circle at 39% 18%, rgba(247, 224, 154, 0.82) 0 0.52%, rgba(247, 224, 154, 0.12) 0.53% 1.65%, transparent 1.75%),
-    radial-gradient(circle at 57% 11%, rgba(246, 214, 124, 0.82) 0 0.48%, rgba(246, 214, 124, 0.12) 0.49% 1.55%, transparent 1.65%),
-    radial-gradient(circle at 71% 19%, rgba(244, 214, 121, 0.82) 0 0.5%, rgba(244, 214, 121, 0.12) 0.51% 1.55%, transparent 1.65%),
-    conic-gradient(from 206deg at 22% 30%, rgba(245, 194, 82, 0.16), rgba(52, 103, 195, 0.28), rgba(245, 194, 82, 0.08), rgba(10, 24, 67, 0) 74%),
-    conic-gradient(from 194deg at 44% 18%, rgba(241, 184, 54, 0.12), rgba(40, 92, 185, 0.26), rgba(241, 184, 54, 0.08), rgba(11, 26, 73, 0) 74%),
-    conic-gradient(from 214deg at 69% 30%, rgba(245, 201, 92, 0.12), rgba(45, 88, 178, 0.22), rgba(245, 201, 92, 0.06), rgba(10, 24, 67, 0) 76%),
-    radial-gradient(ellipse at 36% 36%, rgba(38, 88, 178, 0.2) 0 10%, transparent 24%),
-    radial-gradient(ellipse at 58% 30%, rgba(31, 76, 158, 0.16) 0 9%, transparent 22%),
-    repeating-linear-gradient(164deg, rgba(240, 218, 139, 0.03) 0 3px, transparent 3px 18px),
-    repeating-linear-gradient(22deg, rgba(126, 172, 236, 0.03) 0 2px, transparent 2px 14px),
-    linear-gradient(180deg, #081025 0%, #112b57 30%, #234a87 56%, #19345f 100%);
-}
-
 body[data-theme="alaska"] {
   background:
-    radial-gradient(ellipse at 18% 92%, rgba(236, 98, 198, 0.22) 0 4%, transparent 9%),
-    radial-gradient(ellipse at 28% 95%, rgba(236, 126, 205, 0.16) 0 3.4%, transparent 8.5%),
-    radial-gradient(ellipse at 39% 98%, rgba(244, 176, 227, 0.12) 0 3%, transparent 8%),
-    linear-gradient(180deg, rgba(225, 244, 255, 0.08) 0 7%, transparent 9%),
-    linear-gradient(180deg, transparent 0 58%, rgba(179, 228, 255, 0.09) 58% 60%, transparent 60% 100%),
-    linear-gradient(180deg, rgba(3, 10, 18, 0) 0 52%, rgba(18, 53, 76, 0.34) 52% 61%, rgba(8, 29, 45, 0.92) 61% 76%, rgba(4, 18, 28, 1) 76% 100%),
-    repeating-linear-gradient(168deg, rgba(239, 248, 255, 0.035) 0 2px, transparent 2px 18px),
-    linear-gradient(160deg, #02101c 0%, #08263b 28%, #0b4758 54%, #174f69 100%);
+    linear-gradient(180deg, #020617 0%, #061125 42%, #0b1a3a 74%, #1e293b 100%);
 }
 
 body[data-theme="biohazard"] {
@@ -313,24 +224,6 @@ body[data-theme="biohazard"] {
     repeating-linear-gradient(180deg, rgba(180, 84, 255, 0.05) 0 2px, transparent 2px 18px),
     linear-gradient(135deg, rgba(180, 84, 255, 0.09) 0 20%, transparent 20% 45%, rgba(141, 252, 79, 0.08) 45% 100%),
     linear-gradient(180deg, #030305 0%, #09050f 36%, #18071f 68%, #060507 100%);
-}
-
-body[data-theme="cyberpunk-2077"] {
-  background:
-    linear-gradient(135deg, rgba(255, 77, 167, 0.18), transparent 30%),
-    radial-gradient(circle at 82% 20%, rgba(56, 228, 255, 0.24), transparent 24%),
-    radial-gradient(circle at 20% 84%, rgba(255, 77, 167, 0.16), transparent 26%),
-    repeating-linear-gradient(90deg, rgba(56, 228, 255, 0.06) 0 2px, transparent 2px 120px),
-    repeating-linear-gradient(180deg, rgba(255, 226, 79, 0.05) 0 2px, transparent 2px 110px),
-    linear-gradient(160deg, #040711 0%, #091530 34%, #10294c 52%, #32113e 100%);
-}
-
-body[data-theme="github-dark"] {
-  background:
-    linear-gradient(90deg, #181818 0 88px, transparent 88px 100%),
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 34px),
-    linear-gradient(180deg, rgba(86, 156, 214, 0.06), transparent 120px),
-    linear-gradient(140deg, var(--bg-1), var(--bg-2) 52%, var(--bg-3));
 }
 
 body[data-theme="snes-rainbow"] {
@@ -415,57 +308,156 @@ body[data-theme="signal-red"]::after {
   background: radial-gradient(circle, rgba(255, 44, 62, 0.44) 0, transparent 70%);
 }
 
-body[data-theme="starry-night"]::before {
-  top: 0;
-  right: 4%;
-  width: 16rem;
-  height: 16rem;
-  opacity: 0.42;
-  filter: blur(4px);
-  background:
-    radial-gradient(circle at 56% 36%, rgba(248, 224, 132, 0.7) 0 10%, rgba(248, 224, 132, 0.2) 11% 22%, transparent 23%),
-    conic-gradient(from 132deg at 50% 48%, rgba(248, 223, 122, 0.22), rgba(61, 109, 197, 0.24), rgba(248, 223, 122, 0.12), rgba(21, 45, 97, 0) 78%);
-}
-
-body[data-theme="starry-night"]::after {
-  bottom: 0;
-  left: 1.5%;
-  width: 13rem;
-  height: 21rem;
-  opacity: 0.5;
-  filter: blur(0);
-  border-radius: 46% 54% 18% 22%;
-  clip-path: polygon(54% 0, 62% 12%, 56% 26%, 66% 36%, 56% 48%, 64% 60%, 54% 76%, 61% 100%, 40% 100%, 46% 82%, 36% 68%, 42% 52%, 30% 34%, 40% 18%, 45% 0);
-  background: linear-gradient(180deg, rgba(5, 8, 4, 0), rgba(9, 16, 8, 0.16) 18%, rgba(11, 15, 8, 0.88) 62%, rgba(6, 8, 4, 0.96) 100%);
-}
-
-body[data-theme="alaska"]::before {
-  top: -2%;
-  left: 6%;
-  width: 70%;
-  height: 22rem;
-  opacity: 0.58;
-  filter: blur(10px);
-  border-radius: 44% 56% 52% 48%;
-  background:
-    radial-gradient(ellipse at 22% 42%, rgba(114, 255, 190, 0.12) 0 16%, transparent 34%),
-    radial-gradient(ellipse at 48% 36%, rgba(72, 247, 169, 0.2) 0 14%, transparent 32%),
-    radial-gradient(ellipse at 72% 30%, rgba(110, 255, 214, 0.12) 0 16%, transparent 34%),
-    conic-gradient(from 208deg at 24% 62%, rgba(58, 250, 173, 0) 0deg, rgba(58, 250, 173, 0.32) 34deg, rgba(130, 255, 236, 0.18) 74deg, rgba(15, 55, 81, 0) 116deg),
-    conic-gradient(from 202deg at 55% 58%, rgba(58, 250, 173, 0) 0deg, rgba(75, 255, 184, 0.3) 30deg, rgba(137, 255, 239, 0.14) 68deg, rgba(15, 55, 81, 0) 112deg);
-}
-
+body[data-theme="alaska"]::before,
 body[data-theme="alaska"]::after {
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 20rem;
-  opacity: 0.78;
-  filter: blur(0);
-  border-radius: 0;
-  clip-path: polygon(0 100%, 0 76%, 5% 60%, 9% 72%, 13% 52%, 18% 68%, 24% 42%, 30% 64%, 37% 30%, 44% 62%, 53% 26%, 62% 58%, 71% 38%, 80% 66%, 88% 48%, 94% 64%, 100% 56%, 100% 100%);
+  display: none;
+}
+
+.theme-atmosphere {
+  position: fixed;
+  inset: 0;
+  display: none;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.theme-atmosphere::before,
+.theme-atmosphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+body[data-theme="alaska"] .theme-atmosphere {
+  display: block;
   background:
-    linear-gradient(180deg, rgba(225, 240, 250, 0.72) 0, rgba(158, 189, 211, 0.38) 22%, rgba(16, 38, 52, 0.9) 76%, rgba(5, 18, 27, 0.98) 100%);
+    radial-gradient(circle at 18% 14%, rgba(167, 139, 250, 0.08) 0, transparent 16%),
+    radial-gradient(circle at 78% 18%, rgba(56, 189, 248, 0.08) 0, transparent 18%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.14) 0 1px, transparent 1.8px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.1) 0 1px, transparent 1.7px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.08) 0 0.9px, transparent 1.6px),
+    linear-gradient(180deg, #020617 0%, #061125 42%, #0b1a3a 74%, #1e293b 100%);
+  background-size:
+    100% 100%,
+    100% 100%,
+    210px 210px,
+    290px 290px,
+    170px 170px,
+    100% 100%;
+  background-position:
+    0 0,
+    0 0,
+    0 -80px,
+    120px -180px,
+    80px -220px,
+    0 0;
+  box-shadow:
+    inset 0 120px 180px rgba(56, 189, 248, 0.04),
+    inset 0 -180px 240px rgba(2, 6, 23, 0.9);
+  animation: alaskaSnowDrift 46s linear infinite;
+}
+
+body[data-theme="alaska"] .theme-atmosphere::before {
+  inset: -8% -10% 26% -10%;
+  opacity: 0.94;
+  filter: blur(26px) saturate(138%);
+  transform: translate3d(0, 0, 0) scale(1.08) skewY(-8deg);
+  transform-origin: center top;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(ellipse at 12% 18%, rgba(0, 255, 159, 0.18) 0, transparent 34%),
+    radial-gradient(ellipse at 74% 12%, rgba(56, 189, 248, 0.14) 0, transparent 28%),
+    radial-gradient(ellipse at 48% 24%, rgba(167, 139, 250, 0.12) 0, transparent 30%),
+    linear-gradient(100deg, transparent 14%, rgba(0, 255, 159, 0.26) 28%, rgba(56, 189, 248, 0.15) 43%, rgba(167, 139, 250, 0.22) 57%, transparent 74%),
+    linear-gradient(114deg, transparent 18%, rgba(34, 197, 94, 0.18) 33%, rgba(0, 255, 159, 0.24) 46%, rgba(56, 189, 248, 0.17) 58%, transparent 76%),
+    linear-gradient(128deg, transparent 26%, rgba(167, 139, 250, 0.17) 40%, rgba(0, 255, 159, 0.18) 51%, rgba(34, 197, 94, 0.12) 63%, transparent 79%),
+    radial-gradient(ellipse at 52% 34%, rgba(56, 189, 248, 0.12) 0, transparent 42%);
+  background-blend-mode: screen, screen, screen, screen, overlay, soft-light, normal;
+  animation:
+    alaskaAuroraShift 28s ease-in-out infinite alternate,
+    alaskaAuroraPulse 38s ease-in-out infinite alternate;
+}
+
+body[data-theme="alaska"] .theme-atmosphere::after {
+  inset: auto -6% -2% -6%;
+  height: 42vh;
+  opacity: 0.98;
+  background:
+    radial-gradient(ellipse at 50% 10%, rgba(56, 189, 248, 0.08) 0, transparent 38%),
+    linear-gradient(180deg, rgba(199, 230, 255, 0.05) 0, rgba(7, 13, 23, 0) 18%),
+    linear-gradient(138deg, transparent 48%, rgba(26, 40, 58, 0.42) 48.6% 64%, transparent 64.6%) 0 100% / 36% 58% no-repeat,
+    linear-gradient(34deg, transparent 46%, rgba(19, 32, 47, 0.42) 46.6% 62%, transparent 62.6%) 10% 100% / 34% 56% no-repeat,
+    linear-gradient(150deg, transparent 45%, rgba(16, 28, 42, 0.64) 45.6% 66%, transparent 66.6%) 22% 100% / 38% 72% no-repeat,
+    linear-gradient(28deg, transparent 45%, rgba(12, 22, 34, 0.68) 45.6% 66%, transparent 66.6%) 46% 100% / 42% 70% no-repeat,
+    linear-gradient(148deg, transparent 44%, rgba(7, 14, 24, 0.9) 44.6% 67%, transparent 67.6%) 56% 100% / 44% 80% no-repeat,
+    linear-gradient(32deg, transparent 45%, rgba(4, 9, 18, 0.96) 45.6% 68%, transparent 68.6%) 76% 100% / 30% 68% no-repeat,
+    linear-gradient(180deg, rgba(19, 31, 44, 0) 0 18%, rgba(10, 19, 31, 0.36) 40%, rgba(2, 6, 23, 0.98) 100%);
+  animation: alaskaMountainDrift 62s ease-in-out infinite alternate;
+}
+
+@keyframes alaskaAuroraShift {
+  0% {
+    transform: translate3d(-2%, 0, 0) scale(1.08) skewY(-8deg);
+  }
+
+  50% {
+    transform: translate3d(2%, -1.5%, 0) scale(1.14) skewY(-5deg);
+  }
+
+  100% {
+    transform: translate3d(-1%, 2%, 0) scale(1.1) skewY(-9deg);
+  }
+}
+
+@keyframes alaskaAuroraPulse {
+  0% {
+    opacity: 0.76;
+    filter: blur(24px) saturate(126%) hue-rotate(0deg);
+  }
+
+  50% {
+    opacity: 0.96;
+    filter: blur(30px) saturate(150%) hue-rotate(-10deg);
+  }
+
+  100% {
+    opacity: 0.84;
+    filter: blur(27px) saturate(136%) hue-rotate(8deg);
+  }
+}
+
+@keyframes alaskaSnowDrift {
+  0% {
+    background-position:
+      0 0,
+      0 0,
+      0 -80px,
+      120px -180px,
+      80px -220px,
+      0 0;
+  }
+
+  100% {
+    background-position:
+      0 0,
+      0 0,
+      18px 140px,
+      156px 220px,
+      104px 160px,
+      0 0;
+  }
+}
+
+@keyframes alaskaMountainDrift {
+  0% {
+    transform: translate3d(-1.5%, 0, 0) scale(1.02);
+  }
+
+  100% {
+    transform: translate3d(1.5%, 1.2%, 0) scale(1.04);
+  }
 }
 
 body[data-theme="biohazard"]::before {
@@ -486,54 +478,6 @@ body[data-theme="biohazard"]::after {
   opacity: 0.28;
   filter: blur(18px);
   background: radial-gradient(circle, rgba(141, 252, 79, 0.34) 0, transparent 62%);
-}
-
-body[data-theme="cyberpunk-2077"]::before {
-  top: 4%;
-  right: 4%;
-  width: 24rem;
-  height: 24rem;
-  opacity: 0.32;
-  filter: blur(18px);
-  background: radial-gradient(circle, rgba(56, 228, 255, 0.42) 0, transparent 64%);
-}
-
-body[data-theme="cyberpunk-2077"]::after {
-  bottom: 4%;
-  left: 6%;
-  width: 26rem;
-  height: 18rem;
-  opacity: 0.28;
-  filter: blur(18px);
-  background: radial-gradient(circle, rgba(255, 77, 167, 0.42) 0, transparent 64%);
-}
-
-body[data-theme="github-dark"]::before,
-body[data-theme="github-dark"]::after {
-  opacity: 0.24;
-  filter: blur(18px);
-}
-
-body[data-theme="github-dark"]::before {
-  top: 2%;
-  right: 5%;
-  width: 34rem;
-  height: 14rem;
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 26%),
-    linear-gradient(90deg, rgba(156, 220, 254, 0.2) 0 18%, transparent 18% 28%, rgba(206, 145, 120, 0.18) 28% 46%, transparent 46% 60%, rgba(106, 153, 85, 0.2) 60% 76%, transparent 76% 100%);
-}
-
-body[data-theme="github-dark"]::after {
-  bottom: 5%;
-  left: 10%;
-  width: 26rem;
-  height: 16rem;
-  border-radius: 18px;
-  background:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 28px),
-    linear-gradient(90deg, rgba(84, 84, 84, 0.22) 0 16%, transparent 16% 100%);
 }
 
 body[data-theme="snes-rainbow"]::before {
@@ -714,6 +658,8 @@ button {
   max-width: 1440px;
   margin: 0 auto;
   padding: 28px;
+  position: relative;
+  z-index: 1;
 }
 
 .page-shell-narrow {
@@ -1815,5 +1761,13 @@ button {
 
   .story-title {
     max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-theme="alaska"] .theme-atmosphere,
+  body[data-theme="alaska"] .theme-atmosphere::before,
+  body[data-theme="alaska"] .theme-atmosphere::after {
+    animation: none;
   }
 }
