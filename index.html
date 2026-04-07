@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Which AYN Device Should I Buy?</title>
+  <meta
+    name="description"
+    content="A GitHub Pages tool that recommends the best AYN handheld based on your systems, storage needs, performance tier, form factor, and upgrade value."
+  >
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="canyon-dust">
+  <div class="page-shell">
+    <header class="hero panel">
+      <div class="hero-copy">
+        <p class="eyebrow">Config driven handheld picker</p>
+        <h1>Which AYN Device Should I Buy?</h1>
+        <p class="subtitle">
+          Transparent recommendations for Odin, Thor, and legacy AYN hardware.
+          It shows the best fit, the minimum acceptable option, and when staying with your current device makes more sense.
+        </p>
+      </div>
+      <div class="hero-actions">
+        <label class="field compact-field">
+          <span>Theme</span>
+          <select id="themeSelect" aria-label="Theme"></select>
+        </label>
+        <button id="shareButton" class="secondary-button" type="button">Copy Share Link</button>
+        <button id="exportButton" class="secondary-button" type="button">Export Results</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel main-panel">
+        <form id="quizForm" novalidate>
+          <section class="section-block">
+            <div class="section-heading">
+              <p class="section-kicker">Step 0</p>
+              <h2>Ownership</h2>
+            </div>
+            <div class="choice-row" id="ownershipChoices">
+              <label class="choice-card">
+                <input type="radio" name="ownsDevice" value="no">
+                <span>No AYN device yet</span>
+              </label>
+              <label class="choice-card">
+                <input type="radio" name="ownsDevice" value="yes">
+                <span>Yes, I already own one</span>
+              </label>
+            </div>
+            <div class="field" id="currentDeviceField" hidden>
+              <label for="currentDeviceSelect">Current device</label>
+              <select id="currentDeviceSelect"></select>
+            </div>
+          </section>
+
+          <section class="section-block">
+            <div class="section-heading">
+              <p class="section-kicker">Step 1</p>
+              <h2>Form Factor</h2>
+            </div>
+            <div class="choice-row" id="formFactorChoices">
+              <label class="choice-card">
+                <input type="radio" name="formFactor" value="horizontal">
+                <span>Horizontal handheld</span>
+              </label>
+              <label class="choice-card">
+                <input type="radio" name="formFactor" value="clamshell">
+                <span>Clamshell / dual-screen</span>
+              </label>
+              <label class="choice-card">
+                <input type="radio" name="formFactor" value="no-preference">
+                <span>No preference</span>
+              </label>
+            </div>
+            <p class="hint-text">
+              This stays as a weighted preference. It helps break ties, but it does not overpower storage or performance needs.
+            </p>
+          </section>
+
+          <section class="section-block">
+            <div class="section-heading">
+              <p class="section-kicker">Step 2</p>
+              <h2>Systems</h2>
+            </div>
+            <div id="systemSelector" class="system-selector" aria-live="polite"></div>
+            <p class="hint-text">
+              Pick the systems you actually plan to keep installed. PC uses exact sizes instead of averages.
+            </p>
+          </section>
+
+          <section class="section-block">
+            <div class="section-heading">
+              <p class="section-kicker">Step 3</p>
+              <h2>Library Details</h2>
+            </div>
+            <div id="systemCards" class="system-cards"></div>
+          </section>
+
+          <section class="section-block slider-block">
+            <div class="section-heading">
+              <p class="section-kicker">Preference</p>
+              <h2>Budget vs Future Proofing</h2>
+            </div>
+            <label for="futureProofRange" class="range-label">
+              <span>Lean budget</span>
+              <span id="futureProofLabel">Balanced</span>
+              <span>Lean future proof</span>
+            </label>
+            <input id="futureProofRange" type="range" min="0" max="100" step="5">
+            <p class="hint-text">
+              Lower values keep the tool strict about buying only what you need. Higher values add more headroom when the fit is close.
+            </p>
+          </section>
+
+          <section class="section-block advanced-block">
+            <div class="section-heading">
+              <p class="section-kicker">Extras</p>
+              <h2>Advanced Mode</h2>
+            </div>
+            <label class="toggle-row" for="advancedModeToggle">
+              <span>Show storage reserve controls</span>
+              <input id="advancedModeToggle" type="checkbox">
+            </label>
+            <div id="advancedPanel" class="advanced-panel" hidden>
+              <div class="advanced-grid">
+                <label class="field">
+                  <span>OS reserve (GB)</span>
+                  <input id="osReserveInput" type="number" min="8" max="64" step="1">
+                </label>
+                <label class="field">
+                  <span>Apps reserve (GB)</span>
+                  <input id="appReserveInput" type="number" min="4" max="48" step="1">
+                </label>
+                <label class="field">
+                  <span>Cache base (GB)</span>
+                  <input id="cacheBaseInput" type="number" min="0" max="48" step="1">
+                </label>
+                <label class="field">
+                  <span>Cache per 100GB</span>
+                  <input id="cachePerHundredInput" type="number" min="0" max="32" step="1">
+                </label>
+                <label class="field">
+                  <span>Safety buffer (%)</span>
+                  <input id="safetyBufferInput" type="number" min="20" max="35" step="1">
+                </label>
+              </div>
+              <p class="hint-text">
+                These values feed the storage estimate only. The default settings are aimed at real use, not absolute minimums.
+              </p>
+            </div>
+          </section>
+
+          <div class="action-row">
+            <button id="calculateButton" class="primary-button" type="submit">Calculate Recommendation</button>
+            <span id="saveStatus" class="save-status" aria-live="polite"></span>
+          </div>
+        </form>
+      </section>
+
+      <aside class="sidebar">
+        <section class="panel snapshot-panel">
+          <div class="section-heading compact-heading">
+            <p class="section-kicker">Live Snapshot</p>
+            <h2>At a Glance</h2>
+          </div>
+          <div id="snapshotCards" class="snapshot-cards"></div>
+        </section>
+      </aside>
+
+      <section class="panel results-panel" id="resultsSection">
+        <div class="results-frame">
+          <div class="section-heading compact-heading">
+            <p class="section-kicker">Results</p>
+            <h2>Scorecard</h2>
+          </div>
+          <div id="resultsContent" class="results-content">
+            <div class="empty-state">
+              Pick a few systems and enter your library details to generate a recommendation.
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="systems.js" defer></script>
+  <script src="devices.js" defer></script>
+  <script src="rules.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
