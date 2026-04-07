@@ -13,6 +13,16 @@
   --accent-2: #44748d;
   --line: rgba(109, 55, 34, 0.18);
   --shadow: 0 24px 60px rgba(82, 38, 20, 0.18);
+  --surface-1: rgba(255, 255, 255, 0.16);
+  --surface-2: rgba(255, 255, 255, 0.22);
+  --surface-3: rgba(255, 255, 255, 0.32);
+  --surface-4: rgba(255, 255, 255, 0.4);
+  --surface-5: rgba(255, 255, 255, 0.48);
+  --surface-6: rgba(255, 255, 255, 0.56);
+  --surface-contrast: rgba(255, 255, 255, 0.2);
+  --surface-track: rgba(0, 0, 0, 0.08);
+  --muted-strong: #594637;
+  --placeholder: rgba(43, 29, 20, 0.62);
   --success: #1d6a4c;
   --warning: #9a5a12;
   --danger: #9b2f2f;
@@ -175,6 +185,24 @@ body[data-theme="snes-rainbow"] {
   --success: #259d5b;
   --warning: #cb921c;
   --danger: #d65468;
+}
+
+body[data-theme="signal-red"],
+body[data-theme="midnight-grid"],
+body[data-theme="starry-night"],
+body[data-theme="biohazard"],
+body[data-theme="cyberpunk-2077"],
+body[data-theme="github-dark"] {
+  --surface-1: rgba(255, 255, 255, 0.04);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --surface-3: rgba(255, 255, 255, 0.08);
+  --surface-4: rgba(255, 255, 255, 0.1);
+  --surface-5: rgba(255, 255, 255, 0.14);
+  --surface-6: rgba(255, 255, 255, 0.18);
+  --surface-contrast: rgba(255, 255, 255, 0.2);
+  --surface-track: rgba(255, 255, 255, 0.12);
+  --muted-strong: #d2dbe8;
+  --placeholder: rgba(230, 237, 243, 0.58);
 }
 
 * {
@@ -619,8 +647,8 @@ button {
 
 .choice-card input:checked + span {
   border-color: var(--accent);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent), var(--accent-soft);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  background: linear-gradient(180deg, var(--surface-2), transparent), var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--surface-contrast);
 }
 
 .field {
@@ -644,18 +672,23 @@ button {
   color: var(--text);
 }
 
+.field input::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+
 .compact-field {
   gap: 6px;
 }
 
 .compact-field span {
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--muted-strong);
 }
 
 .hint-text {
   font-size: 0.92rem;
-  color: var(--muted);
+  color: var(--muted-strong);
   line-height: 1.55;
 }
 
@@ -689,7 +722,7 @@ button {
   padding: 20px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent), var(--panel-strong);
+  background: linear-gradient(180deg, var(--surface-2), transparent), var(--panel-strong);
   display: grid;
   gap: 16px;
 }
@@ -732,7 +765,8 @@ button {
   padding: 7px 10px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--surface-6);
+  color: var(--text);
   font-size: 0.86rem;
 }
 
@@ -780,7 +814,7 @@ button {
 .stat-box {
   padding: 14px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.44);
+  background: var(--surface-4);
   border: 1px solid var(--line);
 }
 
@@ -790,7 +824,7 @@ button {
   font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--muted);
+  color: var(--muted-strong);
 }
 
 .stat-value {
@@ -844,7 +878,7 @@ button {
   padding: 18px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--surface-3);
 }
 
 .action-row {
@@ -888,7 +922,7 @@ button {
 
 .save-status {
   min-height: 1.25rem;
-  color: var(--muted);
+  color: var(--muted-strong);
   font-size: 0.9rem;
 }
 
@@ -901,7 +935,7 @@ button {
   padding: 18px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent), var(--panel-strong);
+  background: linear-gradient(180deg, var(--surface-2), transparent), var(--panel-strong);
 }
 
 .empty-state {
@@ -944,7 +978,7 @@ button {
 .story-choice-card,
 .story-rank-card {
   border: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent), var(--panel-strong);
+  background: linear-gradient(180deg, var(--surface-2), transparent), var(--panel-strong);
   border-radius: calc(var(--radius-lg) + 2px);
 }
 
@@ -953,9 +987,9 @@ button {
   overflow: hidden;
   padding: clamp(24px, 4vw, 40px);
   background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 24%),
+    radial-gradient(circle at top right, var(--surface-2), transparent 24%),
     radial-gradient(circle at 15% 15%, var(--accent-soft), transparent 30%),
-    linear-gradient(140deg, rgba(255, 255, 255, 0.12), transparent),
+    linear-gradient(140deg, var(--surface-1), transparent),
     var(--panel-strong);
 }
 
@@ -967,7 +1001,7 @@ button {
   width: 14rem;
   height: 14rem;
   border-radius: 38% 62% 46% 54%;
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--surface-2);
   filter: blur(6px);
 }
 
@@ -1021,7 +1055,7 @@ button {
   padding: 12px 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--surface-4);
 }
 
 .story-chip-row {
@@ -1036,7 +1070,7 @@ button {
   padding: 8px 12px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.56);
+  background: var(--surface-6);
   font-size: 0.9rem;
 }
 
@@ -1055,16 +1089,16 @@ button {
   justify-items: start;
   padding: 22px;
   border-radius: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--surface-contrast);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface-1));
+  box-shadow: inset 0 0 0 1px var(--surface-2);
 }
 
 .story-burst-label {
   font-size: 0.84rem;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: var(--muted);
+  color: var(--muted-strong);
 }
 
 .story-burst-value {
@@ -1118,7 +1152,7 @@ button {
 
 .story-panel-contrast {
   background:
-    linear-gradient(140deg, var(--accent-soft), rgba(255, 255, 255, 0.08)),
+    linear-gradient(140deg, var(--accent-soft), var(--surface-1)),
     var(--panel-strong);
 }
 
@@ -1151,7 +1185,7 @@ button {
 .compact-story-list div {
   padding: 12px 14px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.42);
+  background: var(--surface-4);
   border: 1px solid var(--line);
   color: var(--text);
   line-height: 1.5;
@@ -1169,7 +1203,7 @@ button {
 .story-meter-track {
   height: 12px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--surface-track);
   overflow: hidden;
   margin: 10px 0;
 }
@@ -1204,7 +1238,7 @@ button {
 
 .story-choice-card-accent {
   background:
-    linear-gradient(140deg, var(--accent-soft), rgba(255, 255, 255, 0.12)),
+    linear-gradient(140deg, var(--accent-soft), var(--surface-1)),
     var(--panel-strong);
 }
 
@@ -1221,7 +1255,7 @@ button {
   min-height: 56px;
   border-radius: 18px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.48);
+  background: var(--surface-5);
 }
 
 .story-rank-index {
@@ -1243,7 +1277,7 @@ button {
 .changelog-item {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent), var(--panel-strong);
+  background: linear-gradient(180deg, var(--surface-2), transparent), var(--panel-strong);
   overflow: hidden;
 }
 
@@ -1322,7 +1356,7 @@ button {
   padding: 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.38);
+  background: var(--surface-3);
 }
 
 .pc-row-grid {
@@ -1351,8 +1385,8 @@ button {
   padding: 0;
   overflow: hidden;
   background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent 30%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent),
+    radial-gradient(circle at top right, var(--surface-2), transparent 30%),
+    linear-gradient(180deg, var(--surface-1), transparent),
     var(--panel);
 }
 
@@ -1381,8 +1415,8 @@ button {
   padding: 12px 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.4);
-  color: var(--muted);
+  background: var(--surface-4);
+  color: var(--muted-strong);
   line-height: 1.55;
 }
 
