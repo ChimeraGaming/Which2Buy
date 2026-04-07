@@ -506,6 +506,34 @@ body[data-theme="snes-rainbow"] .story-kicker {
   color: var(--rainbow-cyan);
 }
 
+body[data-theme="snes-rainbow"] .choice-card span,
+body[data-theme="snes-rainbow"] .system-chip,
+body[data-theme="snes-rainbow"] .story-chip,
+body[data-theme="snes-rainbow"] .tag,
+body[data-theme="snes-rainbow"] .mini-tag,
+body[data-theme="snes-rainbow"] .pill {
+  color: #f6f4ff;
+  background: rgba(108, 101, 150, 0.88);
+}
+
+body[data-theme="snes-rainbow"] .choice-card input:checked + span,
+body[data-theme="snes-rainbow"] .system-chip.is-selected {
+  color: #ffffff;
+  border-color: rgba(214, 223, 255, 0.92);
+  background:
+    linear-gradient(135deg, rgba(77, 167, 255, 0.34), rgba(154, 149, 216, 0.46) 45%, rgba(76, 242, 107, 0.26)),
+    rgba(115, 106, 168, 0.92);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+    0 10px 22px rgba(24, 166, 255, 0.18);
+}
+
+body[data-theme="snes-rainbow"] .story-list div,
+body[data-theme="snes-rainbow"] .compact-story-list div {
+  background: rgba(228, 224, 255, 0.2);
+  font-weight: 700;
+}
+
 body[data-theme="snes-rainbow"] .snapshot-card:nth-child(1) h3,
 body[data-theme="snes-rainbow"] .snapshot-card:nth-child(1) .mini-tag,
 body[data-theme="snes-rainbow"] .story-metric-card:nth-child(1) .story-metric-label,
@@ -548,6 +576,7 @@ body[data-theme="snes-rainbow"] .story-tone-blue .story-panel-heading h3,
 body[data-theme="snes-rainbow"] .story-tone-blue .story-list div,
 body[data-theme="snes-rainbow"] .story-tone-blue .story-meter-head strong {
   color: var(--rainbow-blue);
+  text-shadow: 0 1px 0 rgba(18, 16, 31, 0.42);
 }
 
 body[data-theme="snes-rainbow"] .story-tone-green .story-step,
@@ -556,6 +585,7 @@ body[data-theme="snes-rainbow"] .story-tone-green .story-breakdown-label,
 body[data-theme="snes-rainbow"] .story-tone-green .story-breakdown-card h4,
 body[data-theme="snes-rainbow"] .story-tone-green .story-breakdown-total {
   color: var(--rainbow-green);
+  text-shadow: 0 1px 0 rgba(18, 16, 31, 0.42);
 }
 
 body[data-theme="snes-rainbow"] .story-tone-yellow .story-step,
@@ -564,12 +594,14 @@ body[data-theme="snes-rainbow"] .story-tone-yellow .story-choice-label,
 body[data-theme="snes-rainbow"] .story-tone-yellow .story-choice-card h4,
 body[data-theme="snes-rainbow"] .story-tone-yellow .compact-story-list div {
   color: var(--rainbow-yellow);
+  text-shadow: 0 1px 0 rgba(18, 16, 31, 0.42);
 }
 
 body[data-theme="snes-rainbow"] .story-tone-red .story-step,
 body[data-theme="snes-rainbow"] .story-tone-red .story-panel-heading h3,
 body[data-theme="snes-rainbow"] .story-tone-red .story-list div {
   color: var(--rainbow-red);
+  text-shadow: 0 1px 0 rgba(18, 16, 31, 0.42);
 }
 
 body[data-theme="snes-rainbow"] .story-tone-cyan .story-step,
@@ -578,6 +610,7 @@ body[data-theme="snes-rainbow"] .story-tone-cyan .story-rank-card h4,
 body[data-theme="snes-rainbow"] .story-tone-cyan .story-rank-copy,
 body[data-theme="snes-rainbow"] .story-tone-cyan .story-rank-index {
   color: var(--rainbow-cyan);
+  text-shadow: 0 1px 0 rgba(18, 16, 31, 0.42);
 }
 
 body[data-theme="snes-rainbow"] .story-tone-purple .story-step,
@@ -585,6 +618,7 @@ body[data-theme="snes-rainbow"] .story-tone-purple .story-panel-heading h3,
 body[data-theme="snes-rainbow"] .story-tone-purple .story-choice-label,
 body[data-theme="snes-rainbow"] .story-tone-purple .story-choice-card h4 {
   color: var(--rainbow-purple);
+  text-shadow: 0 1px 0 rgba(18, 16, 31, 0.42);
 }
 
 h1,
@@ -765,6 +799,8 @@ button {
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: var(--panel-strong);
+  color: var(--text);
+  font-weight: 700;
   transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -778,8 +814,9 @@ button {
 
 .choice-card input:checked + span {
   border-color: var(--accent);
-  background: linear-gradient(180deg, var(--surface-2), transparent), var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--surface-contrast);
+  color: var(--text);
+  background: linear-gradient(180deg, var(--surface-5), transparent), var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--surface-contrast), 0 10px 18px rgba(0, 0, 0, 0.12);
 }
 
 .field {
@@ -835,13 +872,15 @@ button {
   color: var(--text);
   border-radius: 999px;
   padding: 11px 16px;
+  font-weight: 700;
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
 
 .system-chip.is-selected {
   border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent-strong);
+  background: linear-gradient(180deg, var(--surface-5), transparent), var(--accent-soft);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--surface-contrast), 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 .system-cards {
@@ -1403,6 +1442,51 @@ button {
 .changelog-list {
   display: grid;
   gap: 12px;
+}
+
+.changelog-group {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--surface-2), transparent), var(--panel-strong);
+  overflow: hidden;
+}
+
+.changelog-group > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 18px 20px;
+  font-family: Georgia, "Palatino Linotype", serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.changelog-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.changelog-group-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
+.changelog-group .changelog-group > summary {
+  font-size: 1.02rem;
+  padding: 14px 16px;
+}
+
+.changelog-group .changelog-item summary {
+  font-size: 1rem;
+  padding: 15px 16px;
+}
+
+.changelog-note {
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--surface-3);
+  color: var(--muted-strong);
+  line-height: 1.55;
 }
 
 .changelog-item {
