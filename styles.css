@@ -153,22 +153,22 @@ body[data-theme="cyberpunk-2077"] {
 
 body[data-theme="github-dark"] {
   color-scheme: dark;
-  --bg-1: #1f2428;
-  --bg-2: #22272e;
-  --bg-3: #2d333b;
-  --panel: rgba(34, 39, 46, 0.9);
-  --panel-strong: rgba(44, 52, 61, 0.96);
-  --text: #adbac7;
-  --muted: #768390;
-  --accent: #539bf5;
-  --accent-strong: #4184e4;
-  --accent-soft: rgba(83, 155, 245, 0.14);
-  --accent-2: #57ab5a;
-  --line: rgba(118, 131, 144, 0.24);
-  --shadow: 0 24px 64px rgba(0, 0, 0, 0.36);
-  --success: #57ab5a;
-  --warning: #c69026;
-  --danger: #e5534b;
+  --bg-1: #1e1e1e;
+  --bg-2: #202225;
+  --bg-3: #252526;
+  --panel: rgba(31, 31, 31, 0.9);
+  --panel-strong: rgba(37, 37, 38, 0.96);
+  --text: #d4d4d4;
+  --muted: #8b949e;
+  --accent: #569cd6;
+  --accent-strong: #9cdcfe;
+  --accent-soft: rgba(86, 156, 214, 0.16);
+  --accent-2: #ce9178;
+  --line: rgba(74, 74, 74, 0.88);
+  --shadow: 0 24px 64px rgba(0, 0, 0, 0.42);
+  --success: #6a9955;
+  --warning: #d7ba7d;
+  --danger: #f44747;
 }
 
 body[data-theme="snes-rainbow"] {
@@ -191,6 +191,12 @@ body[data-theme="snes-rainbow"] {
   --danger: #ff4d4d;
   --muted-strong: #ece9ff;
   --placeholder: rgba(242, 240, 255, 0.62);
+  --rainbow-blue: #4da7ff;
+  --rainbow-green: #4cf26b;
+  --rainbow-yellow: #ffe04f;
+  --rainbow-red: #ff5a5a;
+  --rainbow-cyan: #44d8ff;
+  --rainbow-purple: #c9c1ff;
 }
 
 body[data-theme="signal-red"],
@@ -284,8 +290,9 @@ body[data-theme="cyberpunk-2077"] {
 
 body[data-theme="github-dark"] {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0 64px, transparent 64px 100%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 78px, transparent 78px 100%),
+    linear-gradient(90deg, #181818 0 88px, transparent 88px 100%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 34px),
+    linear-gradient(180deg, rgba(86, 156, 214, 0.06), transparent 120px),
     linear-gradient(140deg, var(--bg-1), var(--bg-2) 52%, var(--bg-3));
 }
 
@@ -437,8 +444,30 @@ body[data-theme="cyberpunk-2077"]::after {
 
 body[data-theme="github-dark"]::before,
 body[data-theme="github-dark"]::after {
-  opacity: 0.18;
-  filter: blur(24px);
+  opacity: 0.24;
+  filter: blur(18px);
+}
+
+body[data-theme="github-dark"]::before {
+  top: 2%;
+  right: 5%;
+  width: 34rem;
+  height: 14rem;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 26%),
+    linear-gradient(90deg, rgba(156, 220, 254, 0.2) 0 18%, transparent 18% 28%, rgba(206, 145, 120, 0.18) 28% 46%, transparent 46% 60%, rgba(106, 153, 85, 0.2) 60% 76%, transparent 76% 100%);
+}
+
+body[data-theme="github-dark"]::after {
+  bottom: 5%;
+  left: 10%;
+  width: 26rem;
+  height: 16rem;
+  border-radius: 18px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 28px),
+    linear-gradient(90deg, rgba(84, 84, 84, 0.22) 0 16%, transparent 16% 100%);
 }
 
 body[data-theme="snes-rainbow"]::before {
@@ -461,6 +490,101 @@ body[data-theme="snes-rainbow"]::after {
   filter: blur(20px);
   border-radius: 30px;
   background: linear-gradient(135deg, rgba(154, 149, 216, 0.28), transparent 78%);
+}
+
+body[data-theme="snes-rainbow"] .hero-title-row h1,
+body[data-theme="snes-rainbow"] .story-title {
+  background: linear-gradient(90deg, var(--rainbow-purple) 0%, var(--rainbow-blue) 24%, var(--rainbow-green) 48%, var(--rainbow-yellow) 72%, var(--rainbow-red) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+body[data-theme="snes-rainbow"] .eyebrow,
+body[data-theme="snes-rainbow"] .section-kicker,
+body[data-theme="snes-rainbow"] .story-kicker {
+  color: var(--rainbow-cyan);
+}
+
+body[data-theme="snes-rainbow"] .snapshot-card:nth-child(1) h3,
+body[data-theme="snes-rainbow"] .snapshot-card:nth-child(1) .mini-tag,
+body[data-theme="snes-rainbow"] .story-metric-card:nth-child(1) .story-metric-label,
+body[data-theme="snes-rainbow"] .story-metric-card:nth-child(1) .story-metric-value {
+  color: var(--rainbow-blue);
+}
+
+body[data-theme="snes-rainbow"] .snapshot-card:nth-child(2) h3,
+body[data-theme="snes-rainbow"] .snapshot-card:nth-child(2) .mini-tag,
+body[data-theme="snes-rainbow"] .story-metric-card:nth-child(2) .story-metric-label,
+body[data-theme="snes-rainbow"] .story-metric-card:nth-child(2) .story-metric-value {
+  color: var(--rainbow-green);
+}
+
+body[data-theme="snes-rainbow"] .snapshot-card:nth-child(3) h3,
+body[data-theme="snes-rainbow"] .snapshot-card:nth-child(3) .mini-tag,
+body[data-theme="snes-rainbow"] .story-metric-card:nth-child(3) .story-metric-label,
+body[data-theme="snes-rainbow"] .story-metric-card:nth-child(3) .story-metric-value {
+  color: var(--rainbow-yellow);
+}
+
+body[data-theme="snes-rainbow"] .snapshot-card:nth-child(4) h3,
+body[data-theme="snes-rainbow"] .snapshot-card:nth-child(4) .mini-tag,
+body[data-theme="snes-rainbow"] .story-metric-card:nth-child(4) .story-metric-label,
+body[data-theme="snes-rainbow"] .story-metric-card:nth-child(4) .story-metric-value {
+  color: var(--rainbow-red);
+}
+
+body[data-theme="snes-rainbow"] .story-burst-label {
+  color: var(--rainbow-cyan);
+}
+
+body[data-theme="snes-rainbow"] .story-burst-value,
+body[data-theme="snes-rainbow"] .story-rank-score {
+  color: var(--rainbow-purple);
+}
+
+body[data-theme="snes-rainbow"] .story-tone-blue .story-step,
+body[data-theme="snes-rainbow"] .story-tone-blue .story-panel-heading h3,
+body[data-theme="snes-rainbow"] .story-tone-blue .story-list div,
+body[data-theme="snes-rainbow"] .story-tone-blue .story-meter-head strong {
+  color: var(--rainbow-blue);
+}
+
+body[data-theme="snes-rainbow"] .story-tone-green .story-step,
+body[data-theme="snes-rainbow"] .story-tone-green .story-panel-heading h3,
+body[data-theme="snes-rainbow"] .story-tone-green .story-breakdown-label,
+body[data-theme="snes-rainbow"] .story-tone-green .story-breakdown-card h4,
+body[data-theme="snes-rainbow"] .story-tone-green .story-breakdown-total {
+  color: var(--rainbow-green);
+}
+
+body[data-theme="snes-rainbow"] .story-tone-yellow .story-step,
+body[data-theme="snes-rainbow"] .story-tone-yellow .story-panel-heading h3,
+body[data-theme="snes-rainbow"] .story-tone-yellow .story-choice-label,
+body[data-theme="snes-rainbow"] .story-tone-yellow .story-choice-card h4,
+body[data-theme="snes-rainbow"] .story-tone-yellow .compact-story-list div {
+  color: var(--rainbow-yellow);
+}
+
+body[data-theme="snes-rainbow"] .story-tone-red .story-step,
+body[data-theme="snes-rainbow"] .story-tone-red .story-panel-heading h3,
+body[data-theme="snes-rainbow"] .story-tone-red .story-list div {
+  color: var(--rainbow-red);
+}
+
+body[data-theme="snes-rainbow"] .story-tone-cyan .story-step,
+body[data-theme="snes-rainbow"] .story-tone-cyan .story-panel-heading h3,
+body[data-theme="snes-rainbow"] .story-tone-cyan .story-rank-card h4,
+body[data-theme="snes-rainbow"] .story-tone-cyan .story-rank-copy,
+body[data-theme="snes-rainbow"] .story-tone-cyan .story-rank-index {
+  color: var(--rainbow-cyan);
+}
+
+body[data-theme="snes-rainbow"] .story-tone-purple .story-step,
+body[data-theme="snes-rainbow"] .story-tone-purple .story-panel-heading h3,
+body[data-theme="snes-rainbow"] .story-tone-purple .story-choice-label,
+body[data-theme="snes-rainbow"] .story-tone-purple .story-choice-card h4 {
+  color: var(--rainbow-purple);
 }
 
 h1,

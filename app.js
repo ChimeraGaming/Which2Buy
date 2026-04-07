@@ -1215,7 +1215,7 @@
               ${renderStoryMetricCard("Comfortable Upper", formatSize(analysis.storage.comfortableUpper), `${formatSize(analysis.storage.minimumLikely)} is the likely minimum.`)}
         </section>
 
-        <section class="story-panel">
+        <section class="story-panel story-tone-blue">
           <div class="story-panel-heading">
             <div>
               <p class="story-step">Focus</p>
@@ -1241,7 +1241,7 @@
           </div>
         </section>
 
-        <section class="story-panel">
+        <section class="story-panel story-tone-green">
           <div class="story-panel-heading">
             <div>
               <p class="story-step">Loadout</p>
@@ -1260,7 +1260,7 @@
 
         ${buildBumpedSection(analysis)}
 
-        <section class="story-panel">
+        <section class="story-panel story-tone-yellow">
           <div class="story-panel-heading">
             <div>
               <p class="story-step">Options</p>
@@ -1276,7 +1276,7 @@
           </div>
         </section>
 
-        <section class="story-panel">
+        <section class="story-panel story-tone-cyan">
           <div class="story-panel-heading">
             <div>
               <p class="story-step">Finish</p>
@@ -1414,7 +1414,7 @@
 
   function renderStoryComparisonPanel(comparison) {
     return `
-      <section class="story-panel">
+      <section class="story-panel story-tone-purple">
         <div class="story-panel-heading">
           <div>
             <p class="story-step">Current</p>
@@ -1570,7 +1570,7 @@
     }
 
     return `
-      <section class="story-panel story-panel-contrast">
+      <section class="story-panel story-panel-contrast story-tone-red">
         <div class="story-panel-heading">
           <div>
             <p class="story-step">Bump</p>

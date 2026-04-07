@@ -50,7 +50,7 @@
     { id: "starry-night", name: "Starry Night" },
     { id: "biohazard", name: "BioHazard" },
     { id: "cyberpunk-2077", name: "2077 Cyberpunk" },
-    { id: "github-dark", name: "GitHub Dark" },
+    { id: "github-dark", name: "GitHub Code" },
     { id: "snes-rainbow", name: "SNES Rainbow" }
   ];
 
