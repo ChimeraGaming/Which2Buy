@@ -18,6 +18,7 @@ This project is a simple GitHub Pages web app that helps figure out which AYN de
 ## Included Files
 
 - `index.html`
+- `changelog.html`
 - `styles.css`
 - `app.js`
 - `devices.js`

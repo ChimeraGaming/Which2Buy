@@ -48,7 +48,10 @@
     { id: "sea-glass", name: "Sea Glass" },
     { id: "midnight-grid", name: "Midnight Grid" },
     { id: "starry-night", name: "Starry Night" },
-    { id: "github-dark", name: "GitHub Dark" }
+    { id: "biohazard", name: "BioHazard" },
+    { id: "cyberpunk-2077", name: "2077 Cyberpunk" },
+    { id: "github-dark", name: "GitHub Dark" },
+    { id: "snes-rainbow", name: "SNES Rainbow" }
   ];
 
   const appDefaults = {
