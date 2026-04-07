@@ -263,7 +263,7 @@
 
   function populateThemeSelect() {
     elements.themeSelect.innerHTML = RULES.themes
-      .map((theme) => `<option value="${theme.id}">${theme.name}</option>`)
+      .map((theme) => `<option value="${theme.id}">${escapeHtml(theme.name)} ${theme.marker || ""}</option>`)
       .join("");
   }
 
