@@ -43,13 +43,13 @@
   ];
 
   const themes = [
-    { id: "canyon-dust", name: "Canyon Dust", marker: "\uD83D\uDFE2" },
-    { id: "signal-red", name: "Signal Red", marker: "\uD83D\uDFE2" },
-    { id: "sea-glass", name: "Sea Glass", marker: "\uD83D\uDFE2" },
-    { id: "midnight-grid", name: "Midnight Grid", marker: "\uD83D\uDFE2" },
-    { id: "alaska", name: "Alaska", marker: "\uD83D\uDFE1\uD83D\uDFE0" },
-    { id: "biohazard", name: "BioHazard", marker: "\uD83D\uDFE2" },
-    { id: "snes-rainbow", name: "SNES Rainbow Glow", marker: "\uD83D\uDFE2" }
+    { id: "canyon-dust", name: "Canyon Dust" },
+    { id: "signal-red", name: "Signal Red" },
+    { id: "sea-glass", name: "Sea Glass" },
+    { id: "midnight-grid", name: "Midnight Grid" },
+    { id: "alaska", name: "Alaska" },
+    { id: "biohazard", name: "BioHazard" },
+    { id: "snes-rainbow", name: "SNES Rainbow Glow" }
   ];
 
   const appDefaults = {
