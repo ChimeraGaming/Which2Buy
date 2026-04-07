@@ -48,6 +48,7 @@
     { id: "sea-glass", name: "Sea Glass", marker: "\uD83D\uDFE2" },
     { id: "midnight-grid", name: "Midnight Grid", marker: "\uD83D\uDFE2" },
     { id: "starry-night", name: "Starry Night", marker: "\uD83D\uDFE1\uD83D\uDFE0" },
+    { id: "alaska", name: "Alaska", marker: "\uD83D\uDFE1\uD83D\uDFE0" },
     { id: "biohazard", name: "BioHazard", marker: "\uD83D\uDFE2" },
     { id: "cyberpunk-2077", name: "2077 Cyberpunk", marker: "\uD83D\uDFE1\uD83D\uDFE0" },
     { id: "github-dark", name: "GitHub Code", marker: "\uD83D\uDFE1\uD83D\uDD34" },
