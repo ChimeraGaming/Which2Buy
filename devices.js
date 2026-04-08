@@ -271,6 +271,22 @@
       priceUsd: 499,
       available: false,
       recommendable: false
+    },
+    {
+      id: "loki",
+      name: "Loki",
+      family: "Loki",
+      ram: 16,
+      storage: 512,
+      performanceTier: "enthusiast",
+      computeRank: 4,
+      formFactor: "horizontal",
+      dualScreen: false,
+      positioning: "legacy",
+      priceIndex: 4,
+      priceUsd: 499,
+      available: false,
+      recommendable: false
     }
   ];
 

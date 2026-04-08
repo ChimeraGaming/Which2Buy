@@ -1,5 +1,5 @@
 (function () {
-  const APP_VERSION = "v.3.4.2";
+  const APP_VERSION = "v.3.5.1";
   const LOCAL_STORAGE_KEY = "which2buy-state-v1";
   const SYSTEMS = window.SystemsData || [];
   const DEVICES = window.DevicesData || [];
@@ -41,8 +41,12 @@
     elements.shareButton = document.getElementById("shareButton");
     elements.exportButton = document.getElementById("exportButton");
     elements.quizForm = document.getElementById("quizForm");
+    elements.ownsDeviceToggle = document.getElementById("ownsDeviceToggle");
     elements.currentDeviceField = document.getElementById("currentDeviceField");
     elements.currentDeviceSelect = document.getElementById("currentDeviceSelect");
+    elements.formFactorSimpleSelect = document.getElementById("formFactorSimpleSelect");
+    elements.sdCardToggle = document.getElementById("sdCardToggle");
+    elements.sdCardDetails = document.getElementById("sdCardDetails");
     elements.sdCardSizeField = document.getElementById("sdCardSizeField");
     elements.sdCardSizeSelect = document.getElementById("sdCardSizeSelect");
     elements.futureProofRange = document.getElementById("futureProofRange");
@@ -204,6 +208,15 @@
       updateDerivedUi(false);
     });
 
+    elements.ownsDeviceToggle.addEventListener("change", (event) => {
+      state.ownsDevice = event.target.checked ? "yes" : "no";
+      if (state.ownsDevice === "no") {
+        state.currentDeviceId = "";
+      }
+      toggleCurrentDeviceField();
+      updateDerivedUi(false);
+    });
+
     document.getElementById("formFactorChoices").addEventListener("change", (event) => {
       const target = event.target;
       if (target.name !== "formFactor") {
@@ -214,6 +227,11 @@
       updateDerivedUi(false);
     });
 
+    elements.formFactorSimpleSelect.addEventListener("change", (event) => {
+      state.formFactor = event.target.value;
+      updateDerivedUi(false);
+    });
+
     document.getElementById("sdCardChoices").addEventListener("change", (event) => {
       const target = event.target;
       if (target.name !== "useSdCard") {
@@ -221,6 +239,12 @@
       }
 
       state.useSdCard = target.value === "yes" ? "yes" : "no";
+      toggleSdCardField();
+      updateDerivedUi(false);
+    });
+
+    elements.sdCardToggle.addEventListener("change", (event) => {
+      state.useSdCard = event.target.checked ? "yes" : "no";
       toggleSdCardField();
       updateDerivedUi(false);
     });
@@ -320,12 +344,24 @@
       ownsDeviceRadio.checked = true;
     }
 
+    if (elements.ownsDeviceToggle) {
+      elements.ownsDeviceToggle.checked = state.ownsDevice === "yes";
+    }
+
     if (formFactorRadio) {
       formFactorRadio.checked = true;
     }
 
+    if (elements.formFactorSimpleSelect) {
+      elements.formFactorSimpleSelect.value = state.formFactor;
+    }
+
     if (sdCardRadio) {
       sdCardRadio.checked = true;
+    }
+
+    if (elements.sdCardToggle) {
+      elements.sdCardToggle.checked = state.useSdCard === "yes";
     }
 
     elements.currentDeviceSelect.value = state.currentDeviceId;
@@ -417,7 +453,7 @@
   }
 
   function toggleSdCardField() {
-    elements.sdCardSizeField.hidden = state.useSdCard !== "yes";
+    elements.sdCardDetails.hidden = state.useSdCard !== "yes";
   }
 
   function handleAdvancedInput(key, inputElement, min, max) {
@@ -559,8 +595,10 @@
       elements.systemSelector.innerHTML = `
         <div class="simple-system-box">
           <div class="simple-system-selected">${selectedSystems}</div>
-          <div class="simple-system-divider" aria-hidden="true"></div>
-          <div class="simple-system-options">${chips}</div>
+          <details class="simple-system-menu">
+            <summary class="simple-system-menu-summary">Select systems</summary>
+            <div class="simple-system-options">${chips}</div>
+          </details>
         </div>
       `;
       return;
@@ -1734,7 +1772,7 @@
             return [`PC (${entry.count} games)`, `${formatSize(entry.avgTotal)} actual | ${entry.workloadLabel}`];
           }
 
-          return [`${entry.name} (${entry.count} games)`, `${formatRange(entry.lowPerGame, entry.highPerGame)} each | ${formatRange(entry.lowTotal, entry.highTotal)}`];
+          return [`${entry.name} (${entry.count} games)`, formatRange(entry.lowTotal, entry.highTotal)];
         }))}
         ${comparisonSection}
         ${bumpNotes ? `<section class="simple-terminal-section"><h3 class="simple-terminal-title">Why It Got Bumped</h3>${bumpNotes}</section>` : ""}

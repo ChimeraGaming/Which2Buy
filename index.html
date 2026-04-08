@@ -8,7 +8,7 @@
     name="description"
     content="A GitHub Pages tool that recommends the best AYN handheld based on your systems, storage needs, performance tier, form factor, and upgrade value."
   >
-  <link rel="stylesheet" href="styles.css?v=3.4.2">
+  <link rel="stylesheet" href="styles.css?v=3.5.1">
 </head>
 <body data-theme="canyon-dust" data-format="default">
   <div class="theme-atmosphere" aria-hidden="true"></div>
@@ -170,7 +170,7 @@
         <p class="eyebrow">Config driven handheld picker</p>
         <div class="hero-title-row">
           <h1>Which AYN Device Should I Buy?</h1>
-        <span class="version-badge">v.3.4.2</span>
+        <span class="version-badge">v.3.5.1</span>
         </div>
         <p class="subtitle">
           Transparent recommendations for Odin, Thor, and legacy AYN hardware.
@@ -213,7 +213,7 @@
                 <p class="section-kicker">Step 0</p>
                 <h2>Ownership</h2>
               </div>
-              <div class="choice-row" id="ownershipChoices">
+              <div class="choice-row default-only-control" id="ownershipChoices">
                 <label class="choice-card">
                   <input type="radio" name="ownsDevice" value="no">
                   <span>No AYN device yet</span>
@@ -223,6 +223,10 @@
                   <span>Yes, I already own one</span>
                 </label>
               </div>
+              <label class="toggle-row simple-only-control" for="ownsDeviceToggle">
+                <span>Yes, I already own one</span>
+                <input id="ownsDeviceToggle" type="checkbox">
+              </label>
               <div class="field" id="currentDeviceField" hidden>
                 <label for="currentDeviceSelect">Current device</label>
                 <select id="currentDeviceSelect"></select>
@@ -234,7 +238,7 @@
                 <p class="section-kicker">Step 1</p>
                 <h2>Form Factor</h2>
               </div>
-              <div class="choice-row" id="formFactorChoices">
+              <div class="choice-row default-only-control" id="formFactorChoices">
                 <label class="choice-card">
                   <input type="radio" name="formFactor" value="horizontal">
                   <span>Horizontal handheld</span>
@@ -247,6 +251,14 @@
                   <input type="radio" name="formFactor" value="no-preference">
                   <span>No preference</span>
                 </label>
+              </div>
+              <div class="field simple-only-control">
+                <label for="formFactorSimpleSelect">Preference</label>
+                <select id="formFactorSimpleSelect">
+                  <option value="horizontal">Horizontal handheld</option>
+                  <option value="clamshell">Clamshell / dual-screen</option>
+                  <option value="no-preference">No preference</option>
+                </select>
               </div>
               <p class="hint-text">
                 This is a hard preference filter. Clamshell only shows Thor options. Horizontal only shows slab options. No preference keeps all valid options in play.
@@ -279,7 +291,7 @@
                 <p class="section-kicker">Storage</p>
                 <h2>SD Card</h2>
               </div>
-              <div class="choice-row" id="sdCardChoices">
+              <div class="choice-row default-only-control" id="sdCardChoices">
                 <label class="choice-card">
                   <input type="radio" name="useSdCard" value="no">
                   <span>No SD card planned</span>
@@ -289,20 +301,26 @@
                   <span>Yes, I will use one</span>
                 </label>
               </div>
-              <div class="field" id="sdCardSizeField" hidden>
-                <label for="sdCardSizeSelect">SD card size</label>
-                <select id="sdCardSizeSelect">
-                  <option value="128">128GB</option>
-                  <option value="256">256GB</option>
-                  <option value="512">512GB</option>
-                  <option value="1024">1TB</option>
-                  <option value="2048">2TB</option>
-                </select>
+              <label class="toggle-row simple-only-control" for="sdCardToggle">
+                <span>Yes, I will use one</span>
+                <input id="sdCardToggle" type="checkbox">
+              </label>
+              <div id="sdCardDetails" hidden>
+                <div class="field" id="sdCardSizeField">
+                  <label for="sdCardSizeSelect">SD card size</label>
+                  <select id="sdCardSizeSelect">
+                    <option value="128">128GB</option>
+                    <option value="256">256GB</option>
+                    <option value="512">512GB</option>
+                    <option value="1024">1TB</option>
+                    <option value="2048">2TB</option>
+                  </select>
+                </div>
+                <p class="hint-text">
+                  User reports confirm 2TB works despite official AYN staff and engineers stating 1TB is max.<br>
+                  Read speeds are capped at the hardware level around 60 to 80 MB/s, confirmed by multiple user tests and AYN engineers.
+                </p>
               </div>
-              <p class="hint-text">
-                User reports confirm 2TB works despite official AYN staff and engineers stating 1TB is max.<br>
-                Read speeds are capped at the hardware level around 60 to 80 MB/s, confirmed by multiple user tests and AYN engineers.
-              </p>
             </section>
 
             <section class="section-block slider-block">
@@ -404,6 +422,28 @@
                 <details class="changelog-group">
                   <summary>Update 3 - Formatting</summary>
                   <div class="changelog-group-body">
+                    <details class="changelog-group" open>
+                      <summary>3.5</summary>
+                      <div class="changelog-group-body">
+                        <details class="changelog-item" open>
+                          <summary>v.3.5.1</summary>
+                          <div class="changelog-body">
+                            <p>Simple library loadout no longer repeats the same range twice.</p>
+                            <p>Loadout rows now show the total range only for standard systems.</p>
+                          </div>
+                        </details>
+
+                        <details class="changelog-item">
+                          <summary>v.3.5.0</summary>
+                          <div class="changelog-body">
+                            <p>Simple now uses checkbox and dropdown controls for ownership, form factor, and SD card planning.</p>
+                            <p>Systems keep the selected row on top and move the chooser into a multi select dropdown.</p>
+                            <p>Library Details were tightened, the advanced section stays conditional, and Loki was added to current device options.</p>
+                          </div>
+                        </details>
+                      </div>
+                    </details>
+
                     <details class="changelog-group" open>
                       <summary>3.4</summary>
                       <div class="changelog-group-body">
@@ -708,7 +748,7 @@
 
   <script src="systems.js?v=2.4.1" defer></script>
   <script src="devices.js?v=2.4.1" defer></script>
-  <script src="rules.js?v=3.4.2" defer></script>
-  <script src="app.js?v=3.4.2" defer></script>
+  <script src="rules.js?v=3.5.1" defer></script>
+  <script src="app.js?v=3.5.1" defer></script>
 </body>
 </html>
