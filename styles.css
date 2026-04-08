@@ -3450,7 +3450,7 @@ body[data-format="simple"] .results-content {
 
 body[data-format="simple"] .simple-terminal {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   padding: 18px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -3462,14 +3462,18 @@ body[data-format="simple"] .simple-terminal {
     0 22px 46px rgba(0, 0, 0, 0.24);
   color: #deebf2;
   font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
+  --simple-terminal-value-width: 280px;
 }
 
 body[data-format="simple"] .simple-terminal-mini {
   min-height: 0;
+  --simple-terminal-value-width: 220px;
 }
 
 body[data-format="simple"] .simple-terminal-full {
   min-height: 420px;
+  --simple-terminal-value-width: 360px;
 }
 
 body[data-format="simple"] .simple-terminal-head {
@@ -3486,24 +3490,32 @@ body[data-format="simple"] .simple-terminal-command {
 body[data-format="simple"] .simple-terminal-section {
   display: grid;
   gap: 8px;
+  padding-top: 2px;
+}
+
+body[data-format="simple"] .simple-terminal-section + .simple-terminal-section {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 body[data-format="simple"] .simple-terminal-title {
   font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
   font-size: 0.96rem;
-  color: var(--accent-strong);
+  color: #eef6ff;
+  font-weight: 700;
 }
 
 body[data-format="simple"] .simple-terminal-lines {
   display: grid;
-  gap: 6px;
+  gap: 0;
 }
 
 body[data-format="simple"] .simple-prompt-line {
   display: grid;
-  grid-template-columns: max-content minmax(20px, 1fr) minmax(0, 1.2fr);
+  grid-template-columns: max-content minmax(20px, 1fr) minmax(200px, var(--simple-terminal-value-width));
   gap: 8px;
   align-items: baseline;
+  padding: 4px 0;
 }
 
 body[data-format="simple"] .simple-prompt-label {
@@ -3520,6 +3532,13 @@ body[data-format="simple"] .simple-prompt-value {
   color: #f5fbff;
   font-weight: 700;
   min-width: 0;
+  justify-self: start;
+  text-align: left;
+}
+
+body[data-format="simple"] .simple-terminal-note-list {
+  display: grid;
+  gap: 6px;
 }
 
 body[data-format="simple"] .simple-terminal-note {

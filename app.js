@@ -1,5 +1,5 @@
 (function () {
-  const APP_VERSION = "v.3.4.1";
+  const APP_VERSION = "v.3.4.2";
   const LOCAL_STORAGE_KEY = "which2buy-state-v1";
   const SYSTEMS = window.SystemsData || [];
   const DEVICES = window.DevicesData || [];
@@ -401,9 +401,7 @@
     }
 
     elements.quizForm.querySelectorAll(".section-fold").forEach((fold) => {
-      if (state.format !== "simple") {
-        fold.open = true;
-      }
+      fold.open = state.format !== "simple";
     });
   }
 
@@ -1692,19 +1690,19 @@
         ["Current Device", analysis.currentComparison.currentDevice.name],
         ["Recommended", analysis.currentComparison.recommendedDevice.name],
         ["Upgrade Level", capitalizeWords(analysis.currentComparison.classification)]
-      ]) + `<div class="simple-terminal-note">${escapeHtml(analysis.currentComparison.explanation)}</div>`
+      ]) + renderSimpleTerminalNotes([analysis.currentComparison.explanation])
       : "";
     const bumpNotes = analysis.performance.bumpReasons.length || analysis.performance.futureProofBump
-      ? buildPropertiesBumpNotes(analysis).map((note) => `<div class="simple-terminal-note">${escapeHtml(note)}</div>`).join("")
+      ? renderSimpleTerminalNotes(buildPropertiesBumpNotes(analysis))
       : "";
-    const advisoryNotes = [
+    const advisoryNotes = renderSimpleTerminalNotes([
       context.recommendedBody,
       context.priceCopy,
       context.preferenceCopy,
       context.optionalFitCopy,
       context.sdCardCopy,
       ...buildWhyThisFits(analysis)
-    ].filter(Boolean).map((note) => `<div class="simple-terminal-note">${escapeHtml(note)}</div>`).join("");
+    ].filter(Boolean));
 
     elements.resultsContent.innerHTML = `
       <div class="simple-terminal simple-terminal-full">
@@ -1846,6 +1844,14 @@
           ${rows.map(([label, value]) => renderSimplePromptLine(label, value)).join("")}
         </div>
       </section>
+    `;
+  }
+
+  function renderSimpleTerminalNotes(notes) {
+    return `
+      <div class="simple-terminal-note-list">
+        ${notes.map((note) => `<div class="simple-terminal-note">${escapeHtml(note)}</div>`).join("")}
+      </div>
     `;
   }
 
