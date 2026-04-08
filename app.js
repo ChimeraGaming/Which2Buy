@@ -468,6 +468,7 @@
       return;
     }
 
+    const closeSimplePicker = state.format === "simple" && Boolean(button.closest(".simple-system-options"));
     const systemId = button.getAttribute("data-system-toggle");
     const selectedIndex = state.selectedSystems.indexOf(systemId);
 
@@ -480,6 +481,9 @@
     }
 
     renderSystemSelector();
+    if (closeSimplePicker) {
+      closeSimpleSystemMenu();
+    }
     renderSystemCards();
     updateDerivedUi(false);
   }
@@ -606,6 +610,16 @@
     }
 
     elements.systemSelector.innerHTML = chips;
+  }
+
+  function closeSimpleSystemMenu() {
+    const menu = elements.systemSelector.querySelector(".simple-system-menu");
+    if (!menu) {
+      return;
+    }
+
+    menu.open = false;
+    menu.removeAttribute("open");
   }
 
   function renderSystemCards() {
