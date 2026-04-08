@@ -1,5 +1,5 @@
 (function () {
-  const APP_VERSION = "v.3.6.1";
+  const APP_VERSION = "v.3.4.1";
   const LOCAL_STORAGE_KEY = "which2buy-state-v1";
   const SYSTEMS = window.SystemsData || [];
   const DEVICES = window.DevicesData || [];
@@ -561,6 +561,7 @@
       elements.systemSelector.innerHTML = `
         <div class="simple-system-box">
           <div class="simple-system-selected">${selectedSystems}</div>
+          <div class="simple-system-divider" aria-hidden="true"></div>
           <div class="simple-system-options">${chips}</div>
         </div>
       `;
@@ -667,7 +668,7 @@
       <article class="simple-library-row" data-system-card="${system.id}">
         <div class="simple-library-cell simple-library-system">
           <strong>${escapeHtml(system.name)}</strong>
-          <span class="simple-library-note">${escapeHtml(capitalize(system.performanceTier))} workload${system.dualScreenWeight ? " | Dual-screen relevant" : ""}</span>
+          <span class="simple-library-note">${escapeHtml(capitalize(system.performanceTier))} tier${system.dualScreenWeight ? " | Dual screen" : ""}</span>
         </div>
         <label class="field simple-inline-field">
           <span>Game count</span>
