@@ -42,18 +42,34 @@
     { max: 100, label: "Max Headroom" }
   ];
 
+  const themeGroups = [
+    { id: "default", name: "Default Themes" },
+    { id: "animated", name: "Animated Themes (Experimental)" }
+  ];
+
   const themes = [
-    { id: "canyon-dust", name: "Canyon Dust" },
-    { id: "signal-red", name: "Signal Red" },
-    { id: "sea-glass", name: "Sea Glass" },
-    { id: "midnight-grid", name: "Midnight Grid" },
-    { id: "alaska", name: "Alaska" },
-    { id: "biohazard", name: "BioHazard" },
-    { id: "snes-rainbow", name: "SNES Rainbow Glow" }
+    { id: "canyon-dust", name: "Canyon Dust", group: "default" },
+    { id: "signal-red", name: "Signal Red", group: "default" },
+    { id: "sea-glass", name: "Sea Glass", group: "default" },
+    { id: "midnight-grid", name: "Midnight Grid", group: "default" },
+    { id: "alaska", name: "Alaska", group: "default" },
+    { id: "biohazard", name: "BioHazard", group: "default" },
+    { id: "snes-rainbow", name: "SNES Rainbow Glow", group: "default" },
+    { id: "rain", name: "Rain", group: "animated" },
+    { id: "shooting-star", name: "Shooting Star", group: "animated" },
+    { id: "color-drip", name: "ColorDrip", group: "animated" },
+    { id: "bubbly", name: "Bubbly", group: "animated" }
+  ];
+
+  const formats = [
+    { id: "default", name: "Default" },
+    { id: "simple", name: "Simple" },
+    { id: "properties", name: "Properties V1" }
   ];
 
   const appDefaults = {
     theme: "canyon-dust",
+    format: "default",
     ownsDevice: "no",
     currentDeviceId: "",
     formFactor: "no-preference",
@@ -167,7 +183,9 @@
   window.Rules = {
     performanceTiers,
     futureProofLabels,
+    themeGroups,
     themes,
+    formats,
     appDefaults,
     storageThresholds,
     performanceThresholds,

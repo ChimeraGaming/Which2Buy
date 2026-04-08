@@ -12,6 +12,7 @@
       dualScreen: false,
       positioning: "premium",
       priceIndex: 3,
+      priceUsd: 399,
       available: true,
       recommendable: true
     },
@@ -27,6 +28,7 @@
       dualScreen: false,
       positioning: "premium",
       priceIndex: 4,
+      priceUsd: 499,
       available: true,
       recommendable: true
     },
@@ -42,6 +44,7 @@
       dualScreen: false,
       positioning: "premium",
       priceIndex: 5,
+      priceUsd: 599,
       available: true,
       recommendable: true
     },
@@ -57,6 +60,7 @@
       dualScreen: false,
       positioning: "premium",
       priceIndex: 6,
+      priceUsd: 699,
       available: true,
       recommendable: true
     },
@@ -72,6 +76,7 @@
       dualScreen: true,
       positioning: "dual-screen",
       priceIndex: 2,
+      priceUsd: 299,
       available: true,
       recommendable: true
     },
@@ -87,6 +92,7 @@
       dualScreen: true,
       positioning: "dual-screen",
       priceIndex: 3,
+      priceUsd: 399,
       available: true,
       recommendable: true
     },
@@ -102,6 +108,7 @@
       dualScreen: true,
       positioning: "dual-screen",
       priceIndex: 4,
+      priceUsd: 499,
       available: true,
       recommendable: true
     },
@@ -117,6 +124,7 @@
       dualScreen: true,
       positioning: "dual-screen",
       priceIndex: 5,
+      priceUsd: 599,
       available: true,
       recommendable: true
     },
@@ -132,6 +140,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 2,
+      priceUsd: 299,
       available: true,
       recommendable: true
     },
@@ -147,6 +156,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 3,
+      priceUsd: 399,
       available: true,
       recommendable: true
     },
@@ -162,6 +172,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 4,
+      priceUsd: 499,
       available: true,
       recommendable: true
     },
@@ -177,6 +188,7 @@
       dualScreen: false,
       positioning: "legacy",
       priceIndex: 1,
+      priceUsd: 199,
       available: false,
       recommendable: false
     },
@@ -192,6 +204,7 @@
       dualScreen: false,
       positioning: "legacy",
       priceIndex: 1,
+      priceUsd: 199,
       available: false,
       recommendable: false
     },
@@ -207,6 +220,7 @@
       dualScreen: false,
       positioning: "legacy",
       priceIndex: 2,
+      priceUsd: 299,
       available: false,
       recommendable: false
     },
@@ -222,6 +236,7 @@
       dualScreen: false,
       positioning: "legacy",
       priceIndex: 2,
+      priceUsd: 299,
       available: false,
       recommendable: false
     },
@@ -237,6 +252,7 @@
       dualScreen: false,
       positioning: "legacy",
       priceIndex: 3,
+      priceUsd: 399,
       available: false,
       recommendable: false
     },
@@ -252,6 +268,7 @@
       dualScreen: false,
       positioning: "legacy",
       priceIndex: 4,
+      priceUsd: 499,
       available: false,
       recommendable: false
     }
