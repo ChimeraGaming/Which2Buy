@@ -1,6 +1,7 @@
 (function () {
-  const APP_VERSION = "v.3.5.1";
+  const APP_VERSION = "v.3.6.0";
   const LOCAL_STORAGE_KEY = "which2buy-state-v1";
+  const FIT_SCORE_INFO = "Fit score is the overall match score for this recommendation. It blends performance, RAM, storage, price, form factor, and your selected systems. Higher is better for your current inputs.";
   const SYSTEMS = window.SystemsData || [];
   const DEVICES = window.DevicesData || [];
   const RULES = window.Rules;
@@ -1628,7 +1629,7 @@
               ${sdCardCopy ? `<p class="story-subnote">${escapeHtml(sdCardCopy)}</p>` : ""}
             </div>
             <div class="story-burst">
-              <span class="story-burst-label">Fit Score</span>
+              ${renderInfoLabel("Fit Score", FIT_SCORE_INFO, "story-burst-label")}
               <strong class="story-burst-value">${Math.round(recommendedCandidate.score)}</strong>
               <span class="story-burst-copy">${escapeHtml(buildStoryStamp(analysis))}</span>
             </div>
@@ -1755,7 +1756,7 @@
           ["Expected Storage", formatSize(analysis.storage.expectedAverage)],
           ["Comfortable Upper", formatSize(analysis.storage.comfortableUpper)],
           ["Performance Floor", getComputeFloorLabel(analysis.performance.computeFloorRank)],
-          ["Fit Score", String(Math.round(context.recommendedCandidate.score))]
+          [renderInfoLabel("Fit Score", FIT_SCORE_INFO), String(Math.round(context.recommendedCandidate.score)), true]
         ])}
         ${renderSimpleTerminalSection("Alternative Paths", [
           ["Budget Alternative", analysis.scoring.budgetAlternative ? analysis.scoring.budgetAlternative.device.name : "None"],
@@ -1825,7 +1826,7 @@
           ${renderPropertiesRow("Recommended RAM", `${analysis.performance.recommendedRam}GB`)}
           ${renderPropertiesRow("Minimum RAM", `${analysis.performance.minimumRam}GB`)}
           ${renderPropertiesRow("Performance floor", getComputeFloorLabel(analysis.performance.computeFloorRank))}
-          ${renderPropertiesRow("Fit score", String(Math.round(context.recommendedCandidate.score)))}
+          ${renderPropertiesRow(renderInfoLabel("Fit score", FIT_SCORE_INFO), String(Math.round(context.recommendedCandidate.score)), true)}
           ${renderPropertiesRow("Performance headroom", `${Math.round(context.performancePercent)}%`)}
           ${renderPropertiesRow("RAM fit", `${Math.round(context.ramPercent)}%`)}
         `)}
@@ -1879,7 +1880,7 @@
       <section class="simple-terminal-section">
         <h3 class="simple-terminal-title">${escapeHtml(title)}</h3>
         <div class="simple-terminal-lines">
-          ${rows.map(([label, value]) => renderSimplePromptLine(label, value)).join("")}
+          ${rows.map(([label, value, labelIsHtml]) => renderSimplePromptLine(label, value, labelIsHtml)).join("")}
         </div>
       </section>
     `;
@@ -1893,23 +1894,37 @@
     `;
   }
 
-  function renderSimplePromptLine(label, value) {
+  function renderSimplePromptLine(label, value, labelIsHtml = false) {
     return `
       <div class="simple-prompt-line">
-        <span class="simple-prompt-label">${escapeHtml(label)}</span>
+        <span class="simple-prompt-label">${labelIsHtml ? label : escapeHtml(label)}</span>
         <span class="simple-prompt-dots" aria-hidden="true"></span>
         <span class="simple-prompt-value">${escapeHtml(value)}</span>
       </div>
     `;
   }
 
-  function renderPropertiesRow(label, value) {
+  function renderPropertiesRow(label, value, labelIsHtml = false) {
     return `
       <div class="properties-row">
-        <span class="properties-row-label">${escapeHtml(label)}</span>
+        <span class="properties-row-label">${labelIsHtml ? label : escapeHtml(label)}</span>
         <span class="properties-row-value">${escapeHtml(value)}</span>
       </div>
     `;
+  }
+
+  function renderInfoLabel(label, infoText, className = "") {
+    const classes = ["info-label"];
+    if (className) {
+      classes.push(className);
+    }
+
+    return `<span class="${classes.join(" ")}">${escapeHtml(label)} ${renderInfoHint(infoText)}</span>`;
+  }
+
+  function renderInfoHint(infoText) {
+    const safeInfo = escapeHtml(infoText);
+    return `<span class="info-hint" tabindex="0" title="${safeInfo}" aria-label="${safeInfo}" data-tip="${safeInfo}">(i)</span>`;
   }
 
   function renderPropertiesLibraryRow(entry) {
