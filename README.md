@@ -1,20 +1,23 @@
 # Which AYN Device Should I Buy?
 
-Whether you are buying your first AYN handheld or trying to figure out if an upgrade is actually worth it, this is a tool I put together for both of us.
+[Live Site](https://chimeragaming.github.io/Which2Buy/)
 
-The point is simple. Pick what you actually play, estimate the storage you really need, and get an honest answer instead of being pushed straight to the most expensive option.
+I made this for people trying to figure out which AYN handheld actually makes sense without getting pushed straight to the most expensive option.
+
+If you are buying your first device, it helps narrow things down. If you already own something, it helps you figure out whether an upgrade is worth it or if you should just keep what you have.
+
+The goal is simple. Pick what you actually play, estimate the storage you really need, and get a recommendation that feels honest.
 
 ## What It Does
 
 - Lets you pick the systems you actually care about
-- Estimates library storage needs
-- Factors in RAM and performance tiers
-- Takes form factor preference into account
-- Checks if an SD card will be used
-- Lets you log your current handheld brand and device for ownership context
+- Estimates storage based on the games you plan to keep installed
+- Factors in RAM, performance, and form factor
+- Checks whether an SD card changes the better buy
+- Lets you log your current handheld brand and model for ownership context
 - Compares directly against your current AYN device if you already own one
-- Shows a best fit, optional fit, budget alternative, and future proof option
-- Explains when an upgrade is not worth it
+- Shows a best fit, cheaper alternatives, and future proof options
+- Explains when an upgrade is probably not worth it
 
 ## Included Files
 
@@ -39,12 +42,6 @@ Then open:
 ```text
 http://localhost:8000
 ```
-
-## Live Site
-
-You can find the live version here:
-
-[https://chimeragaming.github.io/Which2Buy/](https://chimeragaming.github.io/Which2Buy/)
 
 ## Notes
 

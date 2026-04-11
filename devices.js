@@ -11,8 +11,8 @@
       formFactor: "horizontal",
       dualScreen: false,
       positioning: "premium",
-      priceIndex: 3,
-      priceUsd: 399,
+      priceIndex: 2,
+      priceUsd: 339,
       available: true,
       recommendable: true
     },
@@ -28,7 +28,7 @@
       dualScreen: false,
       positioning: "premium",
       priceIndex: 4,
-      priceUsd: 499,
+      priceUsd: 439,
       available: true,
       recommendable: true
     },
@@ -44,7 +44,7 @@
       dualScreen: false,
       positioning: "premium",
       priceIndex: 5,
-      priceUsd: 599,
+      priceUsd: 489,
       available: true,
       recommendable: true
     },
@@ -60,7 +60,7 @@
       dualScreen: false,
       positioning: "premium",
       priceIndex: 6,
-      priceUsd: 699,
+      priceUsd: 519,
       available: true,
       recommendable: true
     },
@@ -75,8 +75,8 @@
       formFactor: "clamshell",
       dualScreen: true,
       positioning: "dual-screen",
-      priceIndex: 2,
-      priceUsd: 299,
+      priceIndex: 1,
+      priceUsd: 249,
       available: true,
       recommendable: true
     },
@@ -91,8 +91,8 @@
       formFactor: "clamshell",
       dualScreen: true,
       positioning: "dual-screen",
-      priceIndex: 3,
-      priceUsd: 399,
+      priceIndex: 2,
+      priceUsd: 319,
       available: true,
       recommendable: true
     },
@@ -107,8 +107,8 @@
       formFactor: "clamshell",
       dualScreen: true,
       positioning: "dual-screen",
-      priceIndex: 4,
-      priceUsd: 499,
+      priceIndex: 3,
+      priceUsd: 399,
       available: true,
       recommendable: true
     },
@@ -124,7 +124,7 @@
       dualScreen: true,
       positioning: "dual-screen",
       priceIndex: 5,
-      priceUsd: 599,
+      priceUsd: 489,
       available: true,
       recommendable: true
     },
@@ -139,8 +139,8 @@
       formFactor: "horizontal",
       dualScreen: false,
       positioning: "balanced",
-      priceIndex: 2,
-      priceUsd: 299,
+      priceIndex: 1,
+      priceUsd: 249,
       available: true,
       recommendable: true
     },
@@ -156,7 +156,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 3,
-      priceUsd: 399,
+      priceUsd: 369,
       available: true,
       recommendable: true
     },
@@ -172,7 +172,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 4,
-      priceUsd: 499,
+      priceUsd: 449,
       available: true,
       recommendable: true
     },
