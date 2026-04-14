@@ -3,24 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Which AYN Device Should I Buy?</title>
+  <title>Which Handheld Should I Buy?</title>
   <meta
     name="description"
-    content="A GitHub Pages tool that recommends the best AYN handheld based on your systems, storage needs, performance tier, form factor, and upgrade value."
+    content="A GitHub Pages tool that recommends the best current handheld fit based on your systems, storage needs, performance tier, form factor, and upgrade value."
   >
   <link rel="canonical" href="https://chimeragaming.github.io/Which2Buy/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Which AYN Device Should I Buy?">
-  <meta property="og:description" content="A GitHub Pages tool that recommends the best AYN handheld based on your systems, storage needs, performance tier, form factor, and upgrade value.">
+  <meta property="og:title" content="Which Handheld Should I Buy?">
+  <meta property="og:description" content="A GitHub Pages tool that recommends the best current handheld fit based on your systems, storage needs, performance tier, form factor, and upgrade value.">
   <meta property="og:url" content="https://chimeragaming.github.io/Which2Buy/">
   <meta property="og:image" content="https://chimeragaming.github.io/Which2Buy/Which2Buy.png">
-  <meta property="og:image:alt" content="Which AYN Device Should I Buy preview image">
+  <meta property="og:image:alt" content="Which Handheld Should I Buy preview image">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Which AYN Device Should I Buy?">
-  <meta name="twitter:description" content="A GitHub Pages tool that recommends the best AYN handheld based on your systems, storage needs, performance tier, form factor, and upgrade value.">
+  <meta name="twitter:title" content="Which Handheld Should I Buy?">
+  <meta name="twitter:description" content="A GitHub Pages tool that recommends the best current handheld fit based on your systems, storage needs, performance tier, form factor, and upgrade value.">
   <meta name="twitter:image" content="https://chimeragaming.github.io/Which2Buy/Which2Buy.png">
-  <meta name="twitter:image:alt" content="Which AYN Device Should I Buy preview image">
-  <link rel="stylesheet" href="styles.css?v=4.7.0">
+  <meta name="twitter:image:alt" content="Which Handheld Should I Buy preview image">
+  <link rel="stylesheet" href="styles.css?v=5.5.0">
 </head>
 <body data-theme="canyon-dust" data-format="default">
   <div class="theme-atmosphere" aria-hidden="true"></div>
@@ -181,12 +181,12 @@
       <div class="hero-copy">
         <p class="eyebrow">Config driven handheld picker</p>
         <div class="hero-title-row">
-          <h1>Which AYN Device Should I Buy?</h1>
-        <span class="version-badge">v.4.7.0</span>
+          <h1>Which Handheld Should I Buy?</h1>
+        <span class="version-badge">v.5.5.0</span>
         </div>
         <p class="subtitle">
-          Transparent recommendations for Odin, Thor, and legacy AYN hardware.
-          More Brands Pt. 1 now lets you log your current handheld brand in Step 0, while direct comparison still stays AYN only for now.
+          Transparent recommendations across current official AYN, Retroid, ANBERNIC, AYANEO, Powkiddy, and Miyoo handhelds.
+          Step 0 now also compares your current device directly when that model is already in the live recommendation pool.
         </p>
       </div>
       <div class="hero-actions">
@@ -244,8 +244,8 @@
                   <select id="currentDeviceSelect"></select>
                 </div>
                 <p class="hint-text" id="currentOwnershipNotice" hidden>
-                  More Brands Pt. 1 stores your current brand and device for ownership context.
-                  Direct upgrade comparison still works only when your current device is an AYN model in the config.
+                  This current device is stored for ownership context.
+                  Non live models use family level estimates for cross brand comparison.
                 </p>
               </div>
             </section>
@@ -253,33 +253,31 @@
             <section class="section-block">
               <div class="section-heading">
                 <p class="section-kicker">Step 1</p>
-                <h2>Form Factor</h2>
+                <h2>Preferences</h2>
               </div>
-              <div class="choice-row default-only-control" id="formFactorChoices">
-                <label class="choice-card">
-                  <input type="radio" name="formFactor" value="horizontal">
-                  <span>Horizontal handheld</span>
-                </label>
-                <label class="choice-card">
-                  <input type="radio" name="formFactor" value="clamshell">
-                  <span>Clamshell / dual-screen</span>
-                </label>
-                <label class="choice-card">
-                  <input type="radio" name="formFactor" value="no-preference">
-                  <span>No preference</span>
-                </label>
-              </div>
-              <div class="field simple-only-control">
-                <label for="formFactorSimpleSelect">Preference</label>
-                <select id="formFactorSimpleSelect">
-                  <option value="horizontal">Horizontal handheld</option>
-                  <option value="clamshell">Clamshell / dual-screen</option>
-                  <option value="no-preference">No preference</option>
-                </select>
+              <div class="preferences-grid">
+                <div class="field">
+                  <label for="useCaseLaneSelect">Use Case</label>
+                  <select id="useCaseLaneSelect"></select>
+                </div>
+                <div class="field">
+                  <label for="formFactorSimpleSelect">Form Factor</label>
+                  <select id="formFactorSimpleSelect">
+                    <option value="horizontal">Horizontal handheld</option>
+                    <option value="vertical">Vertical handheld</option>
+                    <option value="clamshell">Clamshell / dual-screen</option>
+                    <option value="no-preference">No preference</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="brandPreferenceSelect">Brand</label>
+                  <select id="brandPreferenceSelect"></select>
+                </div>
               </div>
               <p class="hint-text">
-                This is a hard preference filter. Clamshell only shows Thor options. Horizontal only shows slab options. No preference keeps all valid options in play.
+                Use Case narrows the pool. Selected form factor stays locked, and brand is weighted inside that remaining pool. Any brand keeps all current brands in play.
               </p>
+              <p id="preferencePoolNote" class="hint-text" hidden></p>
             </section>
 
             <section class="section-block">
@@ -288,6 +286,7 @@
                 <h2>Systems</h2>
               </div>
               <div id="systemSelector" class="system-selector" aria-live="polite"></div>
+              <p id="systemLaneNote" class="hint-text" hidden></p>
               <p class="hint-text">
                 Pick the systems you actually plan to keep installed.<br>
                 PC uses exact sizes instead of averages.<br>
@@ -324,8 +323,8 @@
                   </select>
                 </div>
                 <p class="hint-text">
-                  User reports confirm 2TB works despite official AYN staff and engineers stating 1TB is max.<br>
-                  Read speeds are capped at the hardware level around 60 to 80 MB/s, confirmed by multiple user tests and AYN engineers.
+                  Current AYN user reports confirm 2TB works on recent AYN models despite older 1TB wording.<br>
+                  Current AYN read speeds are still capped around 60 to 80 MB/s. Other brands may differ.
                 </p>
               </div>
             </section>
@@ -430,15 +429,50 @@
                   <summary>Update 5 - Brands Pt. 2</summary>
                   <div class="changelog-group-body">
                     <details class="changelog-group" open>
-                      <summary>5.0</summary>
-                      <div class="changelog-group-body">
-                        <details class="changelog-item" open>
-                          <summary>Placeholder</summary>
-                          <div class="changelog-body">
-                            <p>Selecting Brand Preference in Step 1.1.</p>
-                            <p>Steps may change by then. This is just a placeholder for what is coming.</p>
-                          </div>
-                        </details>
+                      <summary>5.5 - Current Cleanup</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Added RG406V to the live retro pool.</p>
+                        <p>Fixed vertical retro tagging for devices like RGB20SX.</p>
+                        <p>Preferences now show the current live pool after active filters.</p>
+                        <p>Pre-order status now shows in more result cards.</p>
+                        <p>Condensed the 5.x release notes.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>5.4 - Form Factor Cleanup</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Selected form factor now stays locked as a real pool filter.</p>
+                        <p>Vertical form factor is now a real preference, and vertical retro buys no longer get treated like generic horizontal picks.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>5.3 - Low End Retro Live</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Added use case lanes and honest guardrails for low end retro.</p>
+                        <p>Added live Powkiddy, Miyoo, ANBERNIC retro, and Miyoo Flip options.</p>
+                        <p>Retro scoring now stays closer to cheap retro fits instead of drifting into Android overkill.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>5.2 - Ownership Compare</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Owned devices now get clearer upgrade, sidegrade, not worth it, and different lane comparisons.</p>
+                        <p>Cross-brand family estimates now cover more non-live owned devices without falling back to note-only ownership.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>5.1 - Preferences</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Step 1 became Preferences with brand and form factor.</p>
+                        <p>Brand now carries the strongest preference weight when the fit is close.</p>
+                        <p>RAM and performance pressure now treat each selected system family like one representative game, while game count still scales storage.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>5.0 - Live Brand Pool</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Added the first live cross-brand pool built from current official AYN, Retroid, ANBERNIC, and AYANEO devices.</p>
+                        <p>Official store price snapshots and pre-order labels now feed the live recommendation pool.</p>
                       </div>
                     </details>
                   </div>
@@ -865,9 +899,9 @@
     </main>
   </div>
 
-  <script src="systems.js?v=2.4.1" defer></script>
-  <script src="devices.js?v=2.4.1" defer></script>
-  <script src="rules.js?v=4.7.0" defer></script>
-  <script src="app.js?v=4.7.0" defer></script>
+  <script src="systems.js?v=5.5.0" defer></script>
+  <script src="devices.js?v=5.5.0" defer></script>
+  <script src="rules.js?v=5.5.0" defer></script>
+  <script src="app.js?v=5.5.0" defer></script>
 </body>
 </html>

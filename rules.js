@@ -66,6 +66,59 @@
     { id: "simple", name: "Simple" }
   ];
 
+  const useCaseLanes = [
+    { id: "any", name: "Any current lane" },
+    { id: "retro-focused", name: "Low End Retro" },
+    { id: "balanced-android", name: "Mid Range Android" },
+    { id: "high-end-android", name: "High End Android" },
+    { id: "clamshell", name: "Clamshell / Dual Screen" }
+  ];
+
+  const useCaseLaneProfiles = {
+    default: {
+      fitModel: "default",
+      ramByRank: { 1: 8, 2: 12, 3: 16, 4: 24 },
+      reserveScale: {
+        os: 1,
+        app: 1,
+        cacheBase: 1,
+        cachePerHundred: 1,
+        safetyShift: 0,
+        safetyMin: 20,
+        safetyMax: 35
+      },
+      internalNeed: {
+        coreBase: 0,
+        coreFactor: 0.12,
+        coreMax: 24,
+        comfortBase: 0,
+        comfortFactor: 0.15,
+        comfortMax: 32
+      }
+    },
+    "retro-focused": {
+      fitModel: "retro-lite",
+      ramByRank: { 1: 1, 2: 1, 3: 2, 4: 4 },
+      reserveScale: {
+        os: 0.08,
+        app: 0.05,
+        cacheBase: 0.12,
+        cachePerHundred: 0.2,
+        safetyShift: -8,
+        safetyMin: 10,
+        safetyMax: 24
+      },
+      internalNeed: {
+        coreBase: 0.5,
+        coreFactor: 0.02,
+        coreMax: 6,
+        comfortBase: 1,
+        comfortFactor: 0.03,
+        comfortMax: 8
+      }
+    }
+  };
+
   const brands = [
     { id: "anbernic", name: "ANBERNIC" },
     { id: "ayaneo", name: "AYANEO" },
@@ -221,11 +274,13 @@
       { id: "powkiddy-rgb10x", name: "RGB10X" },
       { id: "powkiddy-rgb20s", name: "RGB20S" },
       { id: "powkiddy-rgb20-pro", name: "RGB20 Pro" },
+      { id: "powkiddy-rgb20sx", name: "RGB20SX" },
       { id: "powkiddy-rgb30", name: "RGB30" },
       { id: "powkiddy-rgb55", name: "RGB55" },
       { id: "powkiddy-x18s", name: "X18S" },
       { id: "powkiddy-x28", name: "X28" },
       { id: "powkiddy-x35s", name: "X35S" },
+      { id: "powkiddy-x35h", name: "X35H" },
       { id: "powkiddy-x55", name: "X55" },
       { id: "powkiddy-v10", name: "V10" },
       { id: "powkiddy-v20", name: "V20" },
@@ -261,12 +316,106 @@
     ]
   };
 
+  const ownedDeviceCompareProfiles = {
+    anbernic: {
+      fallback: { compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "horizontal", dualScreen: false },
+      profiles: [
+        { ids: ["anbernic-rg35xx-sp", "anbernic-rg34xxsp"], compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "clamshell", dualScreen: false },
+        { ids: ["anbernic-rg280v", "anbernic-rg300x", "anbernic-rg35xx", "anbernic-rg35xx-plus", "anbernic-rg40xx-v"], compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "vertical", dualScreen: false },
+        { ids: ["anbernic-rg35xx-h", "anbernic-rg34xx", "anbernic-rg40xx-h", "anbernic-rg-arc-d", "anbernic-rg-arc-s", "anbernic-cube-xx"], compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "horizontal", dualScreen: false },
+        { ids: ["anbernic-rg351p", "anbernic-rg351m", "anbernic-rg351mp", "anbernic-rg353m", "anbernic-rg353p", "anbernic-rg353ps", "anbernic-rg405m", "anbernic-rg505", "anbernic-rg552"], compareClass: "android-retro", computeRank: 2, ram: 4, storage: 128, formFactor: "horizontal", dualScreen: false },
+        { ids: ["anbernic-rg353v", "anbernic-rg353vs", "anbernic-rg405v"], compareClass: "android-retro", computeRank: 2, ram: 4, storage: 128, formFactor: "vertical", dualScreen: false },
+        { ids: ["anbernic-win600"], compareClass: "windows-handheld", computeRank: 2, ram: 8, storage: 128, formFactor: "horizontal", dualScreen: false }
+      ]
+    },
+    ayaneo: {
+      fallback: { compareClass: "windows-handheld", computeRank: 4, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false },
+      profiles: [
+        { ids: ["ayaneo-pocket-micro", "ayaneo-pocket-dmg", "ayaneo-pocket-vert"], compareClass: "android-retro", computeRank: 2, ram: 6, storage: 128, formFactor: "horizontal", dualScreen: false },
+        { ids: ["ayaneo-pocket-air", "ayaneo-pocket-air-mini"], compareClass: "android-retro", computeRank: 3, ram: 8, storage: 128, formFactor: "horizontal", dualScreen: false },
+        { ids: ["ayaneo-pocket-ace", "ayaneo-pocket-s", "ayaneo-pocket-s-mini", "ayaneo-pocket-s2", "ayaneo-pocket-s2-pro", "ayaneo-pocket-evo"], compareClass: "android-retro", computeRank: 4, ram: 8, storage: 128, formFactor: "horizontal", dualScreen: false },
+        { ids: ["ayaneo-pocket-ds"], compareClass: "android-retro", computeRank: 4, ram: 8, storage: 128, formFactor: "clamshell", dualScreen: true },
+        { ids: ["ayaneo-flip-ds", "ayaneo-flip-1s-ds"], compareClass: "windows-handheld", computeRank: 4, ram: 16, storage: 512, formFactor: "clamshell", dualScreen: true },
+        { ids: ["ayaneo-flip-kb", "ayaneo-flip-1s-kb"], compareClass: "windows-handheld", computeRank: 4, ram: 16, storage: 512, formFactor: "clamshell", dualScreen: false },
+        { ids: ["ayaneo-air", "ayaneo-air-plus", "ayaneo-air-1s"], compareClass: "windows-handheld", computeRank: 3, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false },
+        { ids: ["ayaneo-3", "ayaneo-2", "ayaneo-2s", "ayaneo-geek", "ayaneo-geek-1s", "ayaneo-next", "ayaneo-next-pro", "ayaneo-next-2", "ayaneo-slide", "ayaneo-kun"], compareClass: "windows-handheld", computeRank: 4, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false }
+      ]
+    },
+    gameforce: {
+      fallback: { compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "horizontal", dualScreen: false },
+      profiles: [
+        { ids: ["gameforce-chi"], compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "horizontal", dualScreen: false },
+        { ids: ["gameforce-ace"], compareClass: "android-retro", computeRank: 2, ram: 4, storage: 64, formFactor: "horizontal", dualScreen: false }
+      ]
+    },
+    gpd: {
+      fallback: { compareClass: "windows-handheld", computeRank: 4, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false },
+      profiles: [
+        { ids: ["gpd-xd-plus", "gpd-xp", "gpd-xp-plus"], compareClass: "android-retro", computeRank: 2, ram: 4, storage: 128, formFactor: "horizontal", dualScreen: false },
+        { ids: ["gpd-micro-pc", "gpd-micro-pc-2"], compareClass: "windows-handheld", computeRank: 1, ram: 8, storage: 256, formFactor: "horizontal", dualScreen: false },
+        { ids: ["gpd-win", "gpd-win-2"], compareClass: "windows-handheld", computeRank: 3, ram: 8, storage: 256, formFactor: "horizontal", dualScreen: false },
+        { ids: ["gpd-win-3", "gpd-win-4", "gpd-win-4-2025", "gpd-win-mini", "gpd-win-mini-2025", "gpd-win-max", "gpd-win-max-2", "gpd-win-max-2-2025", "gpd-win-5"], compareClass: "windows-handheld", computeRank: 4, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false }
+      ]
+    },
+    kinhank: {
+      fallback: { compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "horizontal", dualScreen: false },
+      profiles: []
+    },
+    "logitech-g": {
+      fallback: { compareClass: "cloud-streaming", computeRank: 1, ram: 4, storage: 64, formFactor: "horizontal", dualScreen: false },
+      profiles: []
+    },
+    miyoo: {
+      fallback: { compareClass: "linux-retro", computeRank: 1, ram: 1, storage: 64, formFactor: "horizontal", dualScreen: false },
+      profiles: [
+        { ids: ["miyoo-mini", "miyoo-mini-v4", "miyoo-mini-plus", "miyoo-mini-plus-v3"], compareClass: "linux-retro", computeRank: 1, ram: 1, storage: 64, formFactor: "vertical", dualScreen: false },
+        { ids: ["miyoo-flip"], compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "clamshell", dualScreen: false }
+      ]
+    },
+    moqi: {
+      fallback: { compareClass: "android-retro", computeRank: 1, ram: 4, storage: 64, formFactor: "horizontal", dualScreen: false },
+      profiles: []
+    },
+    onexplayer: {
+      fallback: { compareClass: "windows-handheld", computeRank: 4, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false },
+      profiles: []
+    },
+    powkiddy: {
+      fallback: { compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "horizontal", dualScreen: false },
+      profiles: [
+        { ids: ["powkiddy-rgb20sx", "powkiddy-brick"], compareClass: "linux-retro", computeRank: 2, ram: 2, storage: 64, formFactor: "vertical", dualScreen: false },
+        { ids: ["powkiddy-v90s"], compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "clamshell", dualScreen: false },
+        { ids: ["powkiddy-x18s", "powkiddy-x28", "powkiddy-rgb10max3-pro"], compareClass: "android-retro", computeRank: 2, ram: 4, storage: 128, formFactor: "horizontal", dualScreen: false }
+      ]
+    },
+    razer: {
+      fallback: { compareClass: "cloud-streaming", computeRank: 2, ram: 6, storage: 128, formFactor: "horizontal", dualScreen: false },
+      profiles: []
+    },
+    retroid: {
+      fallback: { compareClass: "android-retro", computeRank: 2, ram: 4, storage: 128, formFactor: "horizontal", dualScreen: false },
+      profiles: [
+        { ids: ["retroid-pocket-2", "retroid-pocket-2-plus"], compareClass: "android-retro", computeRank: 1, ram: 4, storage: 64, formFactor: "horizontal", dualScreen: false },
+        { ids: ["retroid-pocket-3", "retroid-pocket-3-plus"], compareClass: "android-retro", computeRank: 2, ram: 4, storage: 128, formFactor: "horizontal", dualScreen: false },
+        { ids: ["retroid-pocket-flip"], compareClass: "android-retro", computeRank: 2, ram: 4, storage: 128, formFactor: "clamshell", dualScreen: false },
+        { ids: ["retroid-pocket-4", "retroid-pocket-4-pro", "retroid-pocket-mini"], compareClass: "android-retro", computeRank: 3, ram: 8, storage: 128, formFactor: "horizontal", dualScreen: false },
+        { ids: ["retroid-pocket-classic"], compareClass: "android-retro", computeRank: 1, ram: 6, storage: 128, formFactor: "vertical", dualScreen: false }
+      ]
+    },
+    zpg: {
+      fallback: { compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "horizontal", dualScreen: false },
+      profiles: []
+    }
+  };
+
   const appDefaults = {
     theme: "canyon-dust",
     format: "default",
     ownsDevice: "no",
     currentBrand: "",
     currentDeviceId: "",
+    useCaseLane: "any",
+    brandPreference: "any",
     formFactor: "no-preference",
     useSdCard: "no",
     sdCardSizeGb: 512,
@@ -381,8 +530,11 @@
     themeGroups,
     themes,
     formats,
+    useCaseLanes,
+    useCaseLaneProfiles,
     brands,
     ownedDevicesByBrand,
+    ownedDeviceCompareProfiles,
     appDefaults,
     storageThresholds,
     performanceThresholds,

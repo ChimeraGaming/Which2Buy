@@ -1,5 +1,5 @@
 (function () {
-  const APP_VERSION = "v.4.7.0";
+  const APP_VERSION = "v.5.5.0";
   const LOCAL_STORAGE_KEY = "which2buy-state-v1";
   const FIT_SCORE_WEIGHTS = {
     performance: 35,
@@ -17,6 +17,8 @@
   const deviceMap = new Map(DEVICES.map((device) => [device.id, device]));
   const brandMap = new Map((RULES.brands || []).map((brand) => [brand.id, brand]));
   const ownedDevicesByBrand = RULES.ownedDevicesByBrand || {};
+  const ownedDeviceCompareProfiles = RULES.ownedDeviceCompareProfiles || {};
+  const useCaseLaneProfiles = RULES.useCaseLaneProfiles || {};
   const recommendableDevices = DEVICES.filter((device) => device.available && device.recommendable);
   const elements = {};
   const usdFormatter = new Intl.NumberFormat("en-US", {
@@ -24,6 +26,44 @@
     currency: "USD",
     maximumFractionDigits: 0
   });
+
+  function getValidPrice(device) {
+    return device && Number.isFinite(device.priceUsd) && device.priceUsd > 0
+      ? device.priceUsd
+      : null;
+  }
+
+  function getPriceContext(devices) {
+    const prices = devices
+      .map((device) => getValidPrice(device))
+      .filter((price) => price !== null);
+
+    if (!prices.length) {
+      return {
+        min: 0,
+        max: 0,
+        span: 0
+      };
+    }
+
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+
+    return {
+      min,
+      max,
+      span: Math.max(1, max - min)
+    };
+  }
+
+  function getPriceAffordability(device, priceContext) {
+    const price = getValidPrice(device);
+    if (price === null || !priceContext.span) {
+      return 0.5;
+    }
+
+    return RULES.clamp(1 - ((price - priceContext.min) / priceContext.span), 0, 1);
+  }
 
   let state = null;
   let latestAnalysis = null;
@@ -37,6 +77,8 @@
     state = loadState();
     populateThemeSelect();
     populateFormatSelect();
+    populateUseCaseLaneSelect();
+    populateBrandPreferenceSelect();
     populateCurrentBrandSelect();
     populateCurrentDeviceSelect();
     bindStaticEvents();
@@ -58,7 +100,10 @@
     elements.currentBrandDeviceField = document.getElementById("currentBrandDeviceField");
     elements.currentDeviceSelect = document.getElementById("currentDeviceSelect");
     elements.currentOwnershipNotice = document.getElementById("currentOwnershipNotice");
+    elements.useCaseLaneSelect = document.getElementById("useCaseLaneSelect");
     elements.formFactorSimpleSelect = document.getElementById("formFactorSimpleSelect");
+    elements.brandPreferenceSelect = document.getElementById("brandPreferenceSelect");
+    elements.preferencePoolNote = document.getElementById("preferencePoolNote");
     elements.sdCardToggle = document.getElementById("sdCardToggle");
     elements.sdCardDetails = document.getElementById("sdCardDetails");
     elements.sdCardSizeField = document.getElementById("sdCardSizeField");
@@ -68,6 +113,7 @@
     elements.advancedModeToggle = document.getElementById("advancedModeToggle");
     elements.advancedPanel = document.getElementById("advancedPanel");
     elements.systemSelector = document.getElementById("systemSelector");
+    elements.systemLaneNote = document.getElementById("systemLaneNote");
     elements.systemCards = document.getElementById("systemCards");
     elements.snapshotCards = document.getElementById("snapshotCards");
     elements.resultsContent = document.getElementById("resultsContent");
@@ -131,6 +177,7 @@
     const normalized = RULES.cloneDefaults();
     const validThemeIds = new Set(RULES.themes.map((theme) => theme.id));
     const validFormatIds = new Set(RULES.formats.map((format) => format.id));
+    const validLaneIds = new Set((RULES.useCaseLanes || []).map((lane) => lane.id));
     const validBrandIds = new Set((RULES.brands || []).map((brand) => brand.id));
     const validSelected = Array.isArray(rawState.selectedSystems)
       ? rawState.selectedSystems.filter((id, index, array) => systemMap.has(id) && array.indexOf(id) === index)
@@ -139,12 +186,15 @@
     normalized.theme = validThemeIds.has(rawState.theme) ? rawState.theme : normalized.theme;
     const normalizedFormat = rawState.format === "properties" ? "simple" : rawState.format;
     normalized.format = validFormatIds.has(normalizedFormat) ? normalizedFormat : normalized.format;
+    normalized.useCaseLane = validLaneIds.has(rawState.useCaseLane) ? rawState.useCaseLane : normalized.useCaseLane;
+    const validPreferenceBrandIds = new Set(["any", ...getPreferredBrandOptions(normalized.useCaseLane, normalized.formFactor).map((brand) => brand.id)]);
     normalized.ownsDevice = rawState.ownsDevice === "yes" ? "yes" : "no";
     normalized.currentBrand = validBrandIds.has(rawState.currentBrand) ? rawState.currentBrand : normalized.currentBrand;
     normalized.currentDeviceId = getOwnedDeviceOptions(normalized.currentBrand).some((device) => device.id === rawState.currentDeviceId)
       ? rawState.currentDeviceId
       : "";
-    normalized.formFactor = ["horizontal", "clamshell", "no-preference"].includes(rawState.formFactor)
+    normalized.brandPreference = validPreferenceBrandIds.has(rawState.brandPreference) ? rawState.brandPreference : normalized.brandPreference;
+    normalized.formFactor = ["horizontal", "vertical", "clamshell", "no-preference"].includes(rawState.formFactor)
       ? rawState.formFactor
       : normalized.formFactor;
     normalized.useSdCard = rawState.useSdCard === "yes" ? "yes" : "no";
@@ -236,18 +286,30 @@
       updateDerivedUi(false);
     });
 
-    document.getElementById("formFactorChoices").addEventListener("change", (event) => {
-      const target = event.target;
-      if (target.name !== "formFactor") {
-        return;
+    elements.formFactorSimpleSelect.addEventListener("change", (event) => {
+      state.formFactor = event.target.value;
+      const validPreferenceBrandIds = new Set(["any", ...getPreferredBrandOptions(state.useCaseLane, state.formFactor).map((brand) => brand.id)]);
+      if (!validPreferenceBrandIds.has(state.brandPreference)) {
+        state.brandPreference = "any";
       }
-
-      state.formFactor = target.value;
+      populateBrandPreferenceSelect(state.useCaseLane, state.formFactor);
+      elements.brandPreferenceSelect.value = state.brandPreference;
       updateDerivedUi(false);
     });
 
-    elements.formFactorSimpleSelect.addEventListener("change", (event) => {
-      state.formFactor = event.target.value;
+    elements.useCaseLaneSelect.addEventListener("change", (event) => {
+      state.useCaseLane = event.target.value;
+      const validPreferenceBrandIds = new Set(["any", ...getPreferredBrandOptions(state.useCaseLane, state.formFactor).map((brand) => brand.id)]);
+      if (!validPreferenceBrandIds.has(state.brandPreference)) {
+        state.brandPreference = "any";
+      }
+      populateBrandPreferenceSelect(state.useCaseLane, state.formFactor);
+      elements.brandPreferenceSelect.value = state.brandPreference;
+      updateDerivedUi(false);
+    });
+
+    elements.brandPreferenceSelect.addEventListener("change", (event) => {
+      state.brandPreference = event.target.value;
       updateDerivedUi(false);
     });
 
@@ -333,6 +395,19 @@
       .join("");
   }
 
+  function populateUseCaseLaneSelect() {
+    elements.useCaseLaneSelect.innerHTML = (RULES.useCaseLanes || [])
+      .map((lane) => `<option value="${lane.id}">${escapeHtml(lane.name)}</option>`)
+      .join("");
+  }
+
+  function populateBrandPreferenceSelect(useCaseLaneId, formFactor) {
+    elements.brandPreferenceSelect.innerHTML = [
+      `<option value="any">Any brand</option>`,
+      ...getPreferredBrandOptions(useCaseLaneId, formFactor).map((brand) => `<option value="${brand.id}">${escapeHtml(brand.name)}</option>`)
+    ].join("");
+  }
+
   function populateCurrentBrandSelect() {
     elements.currentBrandSelect.innerHTML = [
       `<option value="">Select your brand</option>`,
@@ -354,7 +429,6 @@
     applyTheme();
     applyFormat();
 
-    const formFactorRadio = document.querySelector(`input[name="formFactor"][value="${state.formFactor}"]`);
     const sdCardRadio = document.querySelector(`input[name="useSdCard"][value="${state.useSdCard}"]`);
 
     if (elements.ownsDeviceToggle) {
@@ -364,12 +438,18 @@
     elements.currentBrandSelect.value = state.currentBrand;
     populateCurrentDeviceSelect();
 
-    if (formFactorRadio) {
-      formFactorRadio.checked = true;
-    }
-
     if (elements.formFactorSimpleSelect) {
       elements.formFactorSimpleSelect.value = state.formFactor;
+    }
+
+    if (elements.useCaseLaneSelect) {
+      elements.useCaseLaneSelect.value = state.useCaseLane;
+    }
+
+    populateBrandPreferenceSelect(state.useCaseLane, state.formFactor);
+
+    if (elements.brandPreferenceSelect) {
+      elements.brandPreferenceSelect.value = state.brandPreference;
     }
 
     if (sdCardRadio) {
@@ -508,7 +588,7 @@
     const brandName = getBrandName(state.currentBrand);
     const deviceLabel = elements.currentBrandDeviceField.querySelector("label");
     elements.currentBrandDeviceField.hidden = false;
-    elements.currentOwnershipNotice.hidden = state.currentBrand === "ayn" || !state.currentDeviceId;
+    elements.currentOwnershipNotice.hidden = !state.currentDeviceId || deviceMap.has(state.currentDeviceId);
 
     if (deviceLabel) {
       deviceLabel.textContent = `Current ${brandName} device`;
@@ -538,7 +618,13 @@
     }
 
     const systemId = button.getAttribute("data-system-toggle");
+    const system = systemMap.get(systemId);
     const selectedIndex = state.selectedSystems.indexOf(systemId);
+
+    if (selectedIndex < 0 && system && getSystemLaneSupport(system) === "unsupported") {
+      setStatus(`${system.name} sits outside ${getUseCaseLaneName(state.useCaseLane)}.`);
+      return;
+    }
 
     if (selectedIndex >= 0) {
       state.selectedSystems.splice(selectedIndex, 1);
@@ -650,7 +736,15 @@
   function renderSystemSelector() {
     const chips = SYSTEMS.map((system) => {
       const selectedClass = state.selectedSystems.includes(system.id) ? " is-selected" : "";
-      return `<button class="system-chip${selectedClass}" type="button" data-system-toggle="${system.id}">${escapeHtml(system.name)}</button>`;
+      const laneSupport = getSystemLaneSupport(system);
+      const supportClass = laneSupport === "limited"
+        ? " is-limited"
+        : laneSupport === "unsupported" && state.selectedSystems.includes(system.id)
+          ? " is-conflict"
+          : laneSupport === "unsupported"
+            ? " is-disabled"
+            : "";
+      return `<button class="system-chip${selectedClass}${supportClass}" type="button" data-system-toggle="${system.id}" data-lane-support="${laneSupport}">${escapeHtml(system.name)}</button>`;
     }).join("");
 
     if (state.format === "simple") {
@@ -658,7 +752,11 @@
         ? state.selectedSystems
           .map((systemId) => systemMap.get(systemId))
           .filter(Boolean)
-          .map((system) => `<span class="simple-selected-chip">${escapeHtml(system.name)}</span>`)
+          .map((system) => {
+            const laneSupport = getSystemLaneSupport(system);
+            const supportClass = laneSupport === "unsupported" ? " is-conflict" : laneSupport === "limited" ? " is-limited" : "";
+            return `<span class="simple-selected-chip${supportClass}">${escapeHtml(system.name)}</span>`;
+          })
           .join("")
         : `<span class="simple-system-empty">No systems selected yet.</span>`;
 
@@ -671,13 +769,16 @@
           </div>
         </div>
       `;
+      updateSystemLaneNote();
       return;
     }
 
     elements.systemSelector.innerHTML = chips;
+    updateSystemLaneNote();
   }
 
   function renderSystemCards() {
+    const laneWarnings = buildSelectedLaneWarnings();
     if (!state.selectedSystems.length) {
       elements.systemCards.innerHTML = `
         <div class="inline-note">
@@ -689,6 +790,7 @@
 
     if (state.format === "simple") {
       elements.systemCards.innerHTML = `
+        ${laneWarnings}
         <div class="simple-library-sheet">
           ${state.selectedSystems.map((systemId) => {
             const system = systemMap.get(systemId);
@@ -710,7 +812,7 @@
       return;
     }
 
-    elements.systemCards.innerHTML = state.selectedSystems.map((systemId) => {
+    elements.systemCards.innerHTML = `${laneWarnings}${state.selectedSystems.map((systemId) => {
       const system = systemMap.get(systemId);
       const systemState = state.systems[systemId];
 
@@ -723,7 +825,7 @@
       }
 
       return renderStandardSystemCard(system, systemState);
-    }).join("");
+    }).join("")}`;
 
     refreshCardSummaries();
   }
@@ -977,6 +1079,7 @@
   }
 
   function updateDerivedUi(scrollToResults) {
+    updatePreferencePoolNote();
     latestAnalysis = analyzeState();
     renderSnapshot(latestAnalysis);
     renderResults(latestAnalysis);
@@ -1033,10 +1136,10 @@
         return;
       }
 
-      breakdown.push({
-        id: system.id,
-        name: system.name,
-        type: "system",
+        breakdown.push({
+          id: system.id,
+          name: system.name,
+          type: "system",
         count,
         effectiveCount: count,
         lowTotal: count * system.lowGb,
@@ -1045,30 +1148,54 @@
         lowPerGame: system.lowGb,
         avgPerGame: system.avgGb,
         highPerGame: system.highGb,
-        performanceTier: system.performanceTier,
-        performanceWeight: system.performanceWeight,
-        computeRank: RULES.tierRankFromId(system.performanceTier),
-        usageBand: RULES.usageBand(count),
-        workloadLabel: capitalize(system.performanceTier),
-        dualScreenWeight: system.dualScreenWeight || 0
-      });
+          performanceTier: system.performanceTier,
+          performanceWeight: system.performanceWeight,
+          computeRank: RULES.tierRankFromId(system.performanceTier),
+          usageBand: RULES.usageBand(count),
+          workloadLabel: capitalize(system.performanceTier),
+          dualScreenWeight: system.dualScreenWeight || 0
+        });
     });
 
-    const storage = analyzeStorage(breakdown);
-    const performance = analyzePerformance(breakdown);
+    const fitModel = getActiveFitModel(breakdown);
+    const storage = analyzeStorage(breakdown, fitModel);
+    const performance = analyzePerformance(breakdown, fitModel);
+    const laneSupport = getActiveLaneSupportSummary(breakdown);
+
+    if (laneSupport.blocked.length) {
+      return {
+        hasActiveLibrary: breakdown.length > 0,
+        breakdown,
+        fitModel,
+        storage,
+        performance,
+        laneSupport,
+        scoring: createEmptyScoring(),
+        sdSavingsPaths: [],
+        currentComparison: null,
+        ownershipNote: buildOwnershipNote(getCurrentComparisonDevice(), null),
+        dualScreenNeed: calculateDualScreenNeed(breakdown),
+        headlineSystems: getHeadlineSystems(breakdown),
+        keepCurrent: false
+      };
+    }
+
     const scoring = scoreDevices(breakdown, storage, performance);
     const dualScreenNeed = calculateDualScreenNeed(breakdown);
-    const ownershipNote = buildOwnershipNote();
-    const sdSavingsPaths = findSdSavingsPaths(breakdown, storage, performance, scoring);
-    const currentComparison = state.ownsDevice === "yes" && state.currentBrand === "ayn" && state.currentDeviceId
-      ? compareCurrentDevice(deviceMap.get(state.currentDeviceId), scoring.recommended, performance, storage, dualScreenNeed)
+    const currentOwnedDevice = getCurrentComparisonDevice();
+    const currentComparison = currentOwnedDevice && scoring.recommended
+      ? compareCurrentDevice(currentOwnedDevice, scoring.recommended, performance, storage, dualScreenNeed)
       : null;
+    const ownershipNote = buildOwnershipNote(currentOwnedDevice, currentComparison);
+    const sdSavingsPaths = findSdSavingsPaths(breakdown, storage, performance, scoring);
 
     return {
       hasActiveLibrary: breakdown.length > 0,
       breakdown,
+      fitModel,
       storage,
       performance,
+      laneSupport,
       scoring,
       sdSavingsPaths,
       currentComparison,
@@ -1079,7 +1206,51 @@
     };
   }
 
-  function analyzeStorage(breakdown) {
+  function getActiveFitModel(breakdown) {
+    if (!breakdown.length) {
+      return "default";
+    }
+
+    if (state.useCaseLane === "retro-focused") {
+      return "retro-lite";
+    }
+
+    if (breakdown.some((entry) => entry.type === "pc")) {
+      return "default";
+    }
+
+    const excludedIds = new Set(["android", "switch", "wii-u", "ps3", "xbox"]);
+    if (breakdown.some((entry) => excludedIds.has(entry.id))) {
+      return "default";
+    }
+
+    const highestRank = Math.max(...breakdown.map((entry) => entry.computeRank));
+    return highestRank <= 2 ? "retro-lite" : "default";
+  }
+
+  function getFitModelProfile(fitModel) {
+    const defaultProfile = useCaseLaneProfiles.default || {};
+    const retroProfile = useCaseLaneProfiles["retro-focused"] || {};
+    return fitModel === "retro-lite"
+      ? { ...defaultProfile, ...retroProfile }
+      : defaultProfile;
+  }
+
+  function getRamTargetByRank(rank, fitModel) {
+    const fitProfile = getFitModelProfile(fitModel);
+    const laneTarget = fitProfile.ramByRank && fitProfile.ramByRank[rank];
+    if (Number.isFinite(laneTarget)) {
+      return laneTarget;
+    }
+
+    return RULES.getTierByRank(rank).ram;
+  }
+
+  function formatRamTierLabel(rank, fitModel) {
+    return `${getRamTargetByRank(rank, fitModel)}GB`;
+  }
+
+  function analyzeStorage(breakdown, fitModel) {
     const libraryTotals = breakdown.reduce((totals, entry) => {
       totals.low += entry.lowTotal;
       totals.avg += entry.avgTotal;
@@ -1087,13 +1258,28 @@
       return totals;
     }, { low: 0, avg: 0, high: 0 });
 
-    const osReserve = state.advanced.osReserveGb;
-    const appReserve = state.advanced.appReserveGb;
-    const cacheBase = state.advanced.cacheBaseGb;
-    const cachePerHundred = state.advanced.cachePerHundredGb;
-    const safetyBase = state.advanced.safetyBufferPct;
-    const safetyLow = RULES.clamp(safetyBase + RULES.storageThresholds.minimumLikelySafetyShift, 20, 35);
-    const safetyHigh = RULES.clamp(safetyBase + RULES.storageThresholds.comfortableUpperSafetyShift, 20, 35);
+    const fitProfile = getFitModelProfile(fitModel);
+    const reserveScale = fitProfile.reserveScale || {};
+    const internalNeed = fitProfile.internalNeed || {};
+    const osReserve = state.advanced.osReserveGb * (reserveScale.os || 1);
+    const appReserve = state.advanced.appReserveGb * (reserveScale.app || 1);
+    const cacheBase = state.advanced.cacheBaseGb * (reserveScale.cacheBase || 1);
+    const cachePerHundred = state.advanced.cachePerHundredGb * (reserveScale.cachePerHundred || 1);
+    const safetyBase = RULES.clamp(
+      state.advanced.safetyBufferPct + (reserveScale.safetyShift || 0),
+      reserveScale.safetyMin || 20,
+      reserveScale.safetyMax || 35
+    );
+    const safetyLow = RULES.clamp(
+      safetyBase + RULES.storageThresholds.minimumLikelySafetyShift,
+      reserveScale.safetyMin || 20,
+      reserveScale.safetyMax || 35
+    );
+    const safetyHigh = RULES.clamp(
+      safetyBase + RULES.storageThresholds.comfortableUpperSafetyShift,
+      reserveScale.safetyMin || 20,
+      reserveScale.safetyMax || 35
+    );
 
     const cacheLow = cacheBase + ((libraryTotals.low / 100) * cachePerHundred * 0.8);
     const cacheAvg = cacheBase + ((libraryTotals.avg / 100) * cachePerHundred);
@@ -1113,10 +1299,19 @@
     const expectedAverage = (libraryTotals.avg + osReserve + appReserve + cacheAvg) * (1 + (safetyBase / 100));
     const comfortableUpper = (libraryTotals.high + osReserve + appReserve + cacheHigh) * (1 + (safetyHigh / 100));
     const sdCardSizeGb = state.useSdCard === "yes" ? state.sdCardSizeGb : 0;
-    const internalCoreNeed = osReserve + appReserve + cacheAvg + Math.min(24, (libraryTotals.avg * 0.12));
-    const internalComfortNeed = osReserve + appReserve + cacheHigh + Math.min(32, (libraryTotals.high * 0.15));
+    const internalCoreNeed = osReserve
+      + appReserve
+      + cacheAvg
+      + (internalNeed.coreBase || 0)
+      + Math.min(internalNeed.coreMax || 24, libraryTotals.avg * (internalNeed.coreFactor || 0.12));
+    const internalComfortNeed = osReserve
+      + appReserve
+      + cacheHigh
+      + (internalNeed.comfortBase || 0)
+      + Math.min(internalNeed.comfortMax || 32, libraryTotals.high * (internalNeed.comfortFactor || 0.15));
 
     return {
+      fitModel,
       libraryTotals,
       reserves: {
         osReserve,
@@ -1139,14 +1334,15 @@
     };
   }
 
-  function analyzePerformance(breakdown) {
+  function analyzePerformance(breakdown, fitModel) {
     if (!breakdown.length) {
       return {
+        fitModel,
         computeFloorRank: 1,
         minimumRamRank: 1,
         recommendedRamRank: 1,
-        minimumRam: RULES.getTierByRank(1).ram,
-        recommendedRam: RULES.getTierByRank(1).ram,
+        minimumRam: getRamTargetByRank(1, fitModel),
+        recommendedRam: getRamTargetByRank(1, fitModel),
         ramScore: 1,
         bumpReasons: [],
         futureProofBump: false
@@ -1160,11 +1356,13 @@
     const bumpReasons = [];
 
     breakdown.forEach((entry) => {
-      const adjustedComputeRank = entry.usageBand === "edge" && entry.computeRank === 4 ? 3 : entry.computeRank;
+      const performanceUsageBand = getPerformanceUsageBand(entry);
+      const performanceScale = getPerformanceUsageScale(entry);
+      const adjustedComputeRank = performanceUsageBand === "edge" && entry.computeRank === 4 ? 3 : entry.computeRank;
       computeFloorRank = Math.max(computeFloorRank, adjustedComputeRank);
 
-      const roleIntensity = getRoleIntensity(entry.usageBand);
-      const scale = RULES.libraryScale(entry.effectiveCount);
+      const roleIntensity = getRoleIntensity(performanceUsageBand);
+      const scale = performanceScale;
       const effectiveRamScore = 1 + ((entry.performanceWeight - 1) * roleIntensity);
       ramScoreTotal += effectiveRamScore * scale;
       ramScoreWeight += scale;
@@ -1175,9 +1373,11 @@
     const minimumTierWeight = getTierWeightByRank(minimumRamRank);
 
     breakdown.forEach((entry) => {
+      const performanceUsageBand = getPerformanceUsageBand(entry);
+      const performanceScale = getPerformanceUsageScale(entry);
       const pressure = Math.max(0, entry.performanceWeight - minimumTierWeight)
-        * RULES.usageWeight(entry.usageBand)
-        * RULES.libraryScale(entry.effectiveCount);
+        * RULES.usageWeight(performanceUsageBand)
+        * performanceScale;
 
       if (pressure > peakPressure) {
         peakPressure = pressure;
@@ -1203,11 +1403,12 @@
     recommendedRamRank = RULES.clamp(recommendedRamRank, minimumRamRank, 4);
 
     return {
+      fitModel,
       computeFloorRank,
       minimumRamRank,
       recommendedRamRank,
-      minimumRam: RULES.getTierByRank(minimumRamRank).ram,
-      recommendedRam: RULES.getTierByRank(recommendedRamRank).ram,
+      minimumRam: getRamTargetByRank(minimumRamRank, fitModel),
+      recommendedRam: getRamTargetByRank(recommendedRamRank, fitModel),
       ramScore,
       bumpReasons: dedupeEntriesById(bumpReasons),
       futureProofBump
@@ -1218,7 +1419,9 @@
     const dualScreenNeed = calculateDualScreenNeed(breakdown);
     const budgetWeight = (100 - state.futureProofBias) / 100;
     const futureWeight = state.futureProofBias / 100;
+    const retroLiteModel = performance.fitModel === "retro-lite";
     const candidateDevices = getRecommendationDevicePool();
+    const priceContext = getPriceContext(candidateDevices);
 
     const scored = candidateDevices.map((device) => {
       const strengths = [];
@@ -1300,25 +1503,45 @@
 
       const clearsCoreFloor = device.computeRank >= performance.computeFloorRank
         && device.ram >= performance.minimumRam;
-      const formFactorWeight = clearsCoreFloor ? 1.45 : 1;
+      const preferenceWeight = clearsCoreFloor ? 1.4 : 1;
+
+      if (state.brandPreference !== "any") {
+        if (getDeviceBrandId(device) === state.brandPreference) {
+          rankScore += Math.round(24 * preferenceWeight);
+          strengths.push(`Matches your ${getBrandName(state.brandPreference)} brand preference.`);
+        } else {
+          rankScore -= Math.round(9 * preferenceWeight);
+          cautions.push(`Misses your preferred ${getBrandName(state.brandPreference)} brand.`);
+        }
+      }
 
       if (state.formFactor === "horizontal") {
         if (device.formFactor === "horizontal") {
-          rankScore += Math.round(14 * formFactorWeight);
-          strengths.push(clearsCoreFloor ? "Matches your horizontal preference after clearing the core fit." : "Matches your horizontal preference.");
+          rankScore += Math.round(10 * preferenceWeight);
+          strengths.push("Matches your horizontal preference.");
         } else {
-          rankScore -= Math.round(7 * formFactorWeight);
-          cautions.push(clearsCoreFloor ? "Misses your preferred form factor on an otherwise viable fit." : "Misses your preferred form factor.");
+          rankScore -= Math.round(4 * preferenceWeight);
+          cautions.push("Misses your preferred form factor.");
+        }
+      }
+
+      if (state.formFactor === "vertical") {
+        if (device.formFactor === "vertical") {
+          rankScore += Math.round(10 * preferenceWeight);
+          strengths.push("Matches your vertical preference.");
+        } else {
+          rankScore -= Math.round(4 * preferenceWeight);
+          cautions.push("Misses your preferred form factor.");
         }
       }
 
       if (state.formFactor === "clamshell") {
         if (device.formFactor === "clamshell") {
-          rankScore += Math.round(18 * formFactorWeight);
-          strengths.push(clearsCoreFloor ? "Matches your clamshell preference after clearing the core fit." : "Matches your clamshell preference.");
+          rankScore += Math.round(12 * preferenceWeight);
+          strengths.push("Matches your clamshell preference.");
         } else {
-          rankScore -= Math.round(9 * formFactorWeight);
-          cautions.push(clearsCoreFloor ? "Misses your preferred form factor on an otherwise viable fit." : "Misses your preferred form factor.");
+          rankScore -= Math.round(5 * preferenceWeight);
+          cautions.push("Misses your preferred form factor.");
         }
       }
 
@@ -1332,7 +1555,7 @@
         }
       }
 
-      rankScore += (6 - device.priceIndex) * 6 * budgetWeight;
+      rankScore += getPriceAffordability(device, priceContext) * 30 * budgetWeight;
 
       if (device.positioning === "balanced" && budgetWeight > 0.45 && performance.computeFloorRank === 3) {
         rankScore += 6;
@@ -1346,9 +1569,32 @@
         rankScore += 6;
       }
 
+      if (retroLiteModel) {
+        if (device.computeRank <= 2) {
+          rankScore += 10;
+          strengths.push("Stays in a lighter retro power class.");
+        } else {
+          rankScore -= 18;
+          cautions.push("Carries heavier Android style headroom than this retro lane really needs.");
+        }
+
+        if (device.ram > 4) {
+          rankScore -= Math.min(10, 2 + ((device.ram - 4) * 0.75));
+        }
+      }
+
       const meetsMinimumCore = device.computeRank >= performance.computeFloorRank && device.ram >= performance.minimumRam;
       const meetsRecommendedCore = meetsMinimumCore && device.ram >= performance.recommendedRam;
-      const fitBreakdown = buildFitScoreBreakdown(device, storage, performance, totalStoragePool, dualScreenNeed, budgetWeight, futureWeight);
+      const fitBreakdown = buildFitScoreBreakdown(
+        device,
+        storage,
+        performance,
+        totalStoragePool,
+        dualScreenNeed,
+        budgetWeight,
+        futureWeight,
+        priceContext
+      );
 
       return {
         device,
@@ -1371,7 +1617,10 @@
     const recommendedPool = scored.filter((item) => item.meetsRecommendedCore);
     const minimumPool = scored.filter((item) => item.meetsMinimumCore);
     const bestPool = recommendedPool.length ? recommendedPool : minimumPool.length ? minimumPool : scored;
-    const recommendationSelection = selectRecommendedCandidate(bestPool);
+    const recommendationSelection = selectRecommendedCandidate(
+      bestPool,
+      minimumPool.length ? minimumPool : scored
+    );
     const recommended = recommendationSelection.candidate;
     const optionalFitPool = (minimumPool.length ? minimumPool : scored).filter((candidate) => {
       return getDeviceStoragePool(candidate.device, storage) >= storage.expectedAverage
@@ -1391,11 +1640,11 @@
     };
   }
 
-  function buildFitScoreBreakdown(device, storage, performance, totalStoragePool, dualScreenNeed, budgetWeight, futureWeight) {
+  function buildFitScoreBreakdown(device, storage, performance, totalStoragePool, dualScreenNeed, budgetWeight, futureWeight, priceContext) {
     const performanceScore = getPerformanceFitPoints(device, performance, budgetWeight, futureWeight);
     const ramScore = getRamFitPoints(device, performance, budgetWeight, futureWeight);
     const storageScore = getStorageFitPoints(device, storage, performance, totalStoragePool);
-    const valueScore = getValueFitPoints(device, budgetWeight, futureWeight);
+    const valueScore = getValueFitPoints(device, performance, budgetWeight, futureWeight, priceContext);
     const preferenceScore = getPreferenceFitPoints(device, dualScreenNeed);
     const total = RULES.clamp(
       performanceScore + ramScore + storageScore + valueScore + preferenceScore,
@@ -1540,16 +1789,29 @@
 
   function getPerformanceFitPoints(device, performance, budgetWeight, futureWeight) {
     const delta = device.computeRank - performance.computeFloorRank;
+    const retroLiteModel = performance.fitModel === "retro-lite";
     if (delta < 0) {
       return 0;
     }
 
     if (delta === 0) {
-      return 31;
+      return retroLiteModel ? 33 : 31;
     }
 
     if (delta === 1) {
+      if (retroLiteModel) {
+        return RULES.clamp(30 + futureWeight - (budgetWeight * 3), 24, 31);
+      }
+
       return FIT_SCORE_WEIGHTS.performance;
+    }
+
+    if (retroLiteModel) {
+      return RULES.clamp(
+        22 + futureWeight - (budgetWeight * Math.min(10, delta * 4)),
+        12,
+        24
+      );
     }
 
     return RULES.clamp(
@@ -1560,6 +1822,7 @@
   }
 
   function getRamFitPoints(device, performance, budgetWeight, futureWeight) {
+    const retroLiteModel = performance.fitModel === "retro-lite";
     if (device.ram < performance.minimumRam) {
       return 0;
     }
@@ -1567,6 +1830,10 @@
     if (device.ram < performance.recommendedRam) {
       const span = Math.max(1, performance.recommendedRam - performance.minimumRam);
       const closeness = (device.ram - performance.minimumRam) / span;
+      if (retroLiteModel) {
+        return RULES.clamp(10 + (closeness * 10), 10, 18);
+      }
+
       return RULES.clamp(12 + (closeness * 8), 12, 20);
     }
 
@@ -1575,6 +1842,14 @@
     }
 
     const overshoot = device.ram - performance.recommendedRam;
+    if (retroLiteModel) {
+      return RULES.clamp(
+        24 - Math.min(14, overshoot * 1.5) + (futureWeight * 0.5) - (budgetWeight * Math.min(2, overshoot / 2)),
+        10,
+        FIT_SCORE_WEIGHTS.ram
+      );
+    }
+
     return RULES.clamp(
       24 - Math.min(3, overshoot / 4) + Math.min(1, futureWeight) - (budgetWeight * Math.min(1.5, overshoot / 16)),
       21,
@@ -1583,6 +1858,7 @@
   }
 
   function getStorageFitPoints(device, storage, performance, totalStoragePool) {
+    const retroLiteModel = storage.fitModel === "retro-lite";
     const sdCardMode = storage.sdCardSizeGb > 0;
     let points = 0;
 
@@ -1590,16 +1866,17 @@
       if (totalStoragePool >= storage.comfortableUpper) {
         points = FIT_SCORE_WEIGHTS.storage;
       } else if (totalStoragePool >= storage.expectedAverage) {
-        points = 16;
+        points = retroLiteModel ? 18 : 16;
       } else if (totalStoragePool >= storage.minimumLikely) {
-        points = 11;
+        points = retroLiteModel ? 14 : 11;
       } else {
         const ratio = storage.minimumLikely ? (totalStoragePool / storage.minimumLikely) : 0;
-        points = 11 * Math.max(0, Math.min(1, ratio));
+        const scaledMax = retroLiteModel ? 14 : 11;
+        points = scaledMax * Math.max(0, Math.min(1, ratio));
       }
 
       if (device.storage < storage.internalCoreNeed) {
-        points -= 5;
+        points -= retroLiteModel ? 2 : 5;
       }
 
       const overshootPenalty = getSdOvershootPenalty(device, storage, performance);
@@ -1610,24 +1887,36 @@
       if (totalStoragePool >= storage.comfortableUpper) {
         points = FIT_SCORE_WEIGHTS.storage;
       } else if (totalStoragePool >= storage.expectedAverage) {
-        points = 15;
+        points = retroLiteModel ? 17 : 15;
       } else if (totalStoragePool >= storage.minimumLikely) {
-        points = 9;
+        points = retroLiteModel ? 12 : 9;
       } else {
         const ratio = storage.minimumLikely ? (totalStoragePool / storage.minimumLikely) : 0;
-        points = 9 * Math.max(0, Math.min(1, ratio));
+        const scaledMax = retroLiteModel ? 12 : 9;
+        points = scaledMax * Math.max(0, Math.min(1, ratio));
       }
 
       if (device.storage < storage.internalCoreNeed) {
-        points -= 4;
+        points -= retroLiteModel ? 1.5 : 4;
       }
     }
 
     return RULES.clamp(points, 0, FIT_SCORE_WEIGHTS.storage);
   }
 
-  function getValueFitPoints(device, budgetWeight, futureWeight) {
-    const baseValue = ((7 - device.priceIndex) / 6) * FIT_SCORE_WEIGHTS.value;
+  function getValueFitPoints(device, performance, budgetWeight, futureWeight, priceContext) {
+    const retroLiteModel = performance.fitModel === "retro-lite";
+    const baseValue = getPriceAffordability(device, priceContext) * FIT_SCORE_WEIGHTS.value;
+    if (retroLiteModel) {
+      const lighterDeviceBonus = device.computeRank <= 2 ? 1.5 : 0;
+      const heavyAndroidPenalty = device.computeRank >= 3 ? 2.5 + (budgetWeight * 1.5) : 0;
+      return RULES.clamp(
+        (baseValue * (0.9 + (budgetWeight * 0.25))) + 1.5 + lighterDeviceBonus - (futureWeight * 0.5) - heavyAndroidPenalty,
+        2,
+        FIT_SCORE_WEIGHTS.value
+      );
+    }
+
     return RULES.clamp(
       (baseValue * (0.55 + (budgetWeight * 0.45))) + (futureWeight * 1.5),
       1,
@@ -1636,17 +1925,29 @@
   }
 
   function getPreferenceFitPoints(device, dualScreenNeed) {
-    let points = state.formFactor === "no-preference"
-      ? 7
-      : device.formFactor === state.formFactor
-        ? 8.5
-        : 1.5;
+    let points = 0;
+
+    if (state.brandPreference === "any") {
+      points += 4;
+    } else if (getDeviceBrandId(device) === state.brandPreference) {
+      points += 6;
+    } else {
+      points += 1;
+    }
+
+    if (state.formFactor === "no-preference") {
+      points += 3;
+    } else if (device.formFactor === state.formFactor) {
+      points += 3;
+    } else {
+      points += 0.5;
+    }
 
     if (dualScreenNeed > 0.15) {
       if (device.dualScreen) {
-        points += Math.min(2, dualScreenNeed * 4);
+        points += Math.min(1.5, dualScreenNeed * 3);
       } else {
-        points -= Math.min(4, dualScreenNeed * 6);
+        points -= Math.min(2.5, dualScreenNeed * 4);
       }
     }
 
@@ -1657,6 +1958,10 @@
     if (!currentDevice || !recommendedCandidate) {
       return null;
     }
+
+    const currentClass = getComparisonClass(currentDevice);
+    const recommendedClass = getComparisonClass(recommendedCandidate.device);
+    const differentLane = currentClass !== recommendedClass;
 
     const minimumFit = currentDevice.computeRank >= performance.computeFloorRank
       && currentDevice.ram >= performance.minimumRam;
@@ -1678,9 +1983,14 @@
     if (!currentDevice.dualScreen && recommendedCandidate.device.dualScreen && dualScreenNeed > 0.35) {
       improvementScore += 1;
     }
+    if (differentLane) {
+      improvementScore -= 1;
+    }
 
     let classification = "sidegrade";
-    if (recommendedFit && improvementScore <= 1) {
+    if (differentLane && minimumFit && recommendedFit) {
+      classification = "different lane";
+    } else if (recommendedFit && improvementScore <= 1) {
       classification = "not worth upgrading";
     } else if (!minimumFit && improvementScore >= 4) {
       classification = "major upgrade";
@@ -1688,7 +1998,7 @@
       classification = "moderate upgrade";
     }
 
-    if (minimumFit && recommendedFit && state.formFactor === "no-preference") {
+    if (minimumFit && recommendedFit && state.formFactor === "no-preference" && !differentLane) {
       classification = "not worth upgrading";
     }
 
@@ -1696,6 +2006,9 @@
       currentDevice,
       recommendedDevice: recommendedCandidate.device,
       classification,
+      differentLane,
+      currentClass,
+      recommendedClass,
       minimumFit,
       recommendedFit,
       shouldKeepCurrent: classification === "not worth upgrading",
@@ -1704,30 +2017,38 @@
   }
 
   function buildComparisonExplanation(currentDevice, recommendedDevice, classification, minimumFit, recommendedFit) {
+    const estimatedLead = currentDevice.estimatedProfile
+      ? "This uses a family-level estimate for your current device. "
+      : "";
+
+    if (classification === "different lane") {
+      return `${estimatedLead}${currentDevice.name} and ${recommendedDevice.name} sit in different handheld lanes. Treat this as a direction change in use style and value, not a strict same-lane upgrade.`;
+    }
+
     if (classification === "not worth upgrading") {
-      return `${currentDevice.name} already covers your current needs well enough. Any gain from ${recommendedDevice.name} is smaller than the cost unless you want a different form factor or more headroom on purpose.`;
+      return `${estimatedLead}${currentDevice.name} already covers your current needs well enough. Any gain from ${recommendedDevice.name} is smaller than the cost unless you want a different form factor or more headroom on purpose.`;
     }
 
     if (classification === "major upgrade") {
-      return `${recommendedDevice.name} is a clear step up in both capability and headroom. Your current ${currentDevice.name} misses enough of the performance or RAM target that the jump is meaningful.`;
+      return `${estimatedLead}${recommendedDevice.name} is a clear step up in both capability and headroom. Your current ${currentDevice.name} misses enough of the performance or RAM target that the jump is meaningful.`;
     }
 
     if (classification === "moderate upgrade") {
-      return `${recommendedDevice.name} gives you useful headroom over ${currentDevice.name}, but the jump is more about comfort and flexibility than a complete class change.`;
+      return `${estimatedLead}${recommendedDevice.name} gives you useful headroom over ${currentDevice.name}, but the jump is more about comfort and flexibility than a complete class change.`;
     }
 
     if (minimumFit && !recommendedFit) {
-      return `${currentDevice.name} is still workable, but ${recommendedDevice.name} better matches the recommended tier and storage comfort target.`;
+      return `${estimatedLead}${currentDevice.name} is still workable, but ${recommendedDevice.name} better matches the recommended tier and storage comfort target.`;
     }
 
-    return `${recommendedDevice.name} changes the experience more in shape or comfort than raw capability.`;
+    return `${estimatedLead}${recommendedDevice.name} changes the experience more in shape or comfort than raw capability.`;
   }
   function renderSnapshot(analysis) {
     if (!analysis.hasActiveLibrary) {
       if (state.format === "simple") {
         elements.snapshotCards.innerHTML = `
           <div class="simple-terminal simple-terminal-mini">
-            <div class="simple-terminal-head">C:\\AYN\\Which2Buy> glance</div>
+            <div class="simple-terminal-head">C:\\Where2Buy> glance</div>
             <div class="simple-terminal-note">Select systems and enter game counts or PC sizes to populate this view.</div>
           </div>
         `;
@@ -1748,6 +2069,19 @@
       return;
     }
 
+    if (!analysis.scoring.recommended) {
+      const noMatchMessage = buildNoSupportedMatchMessage(analysis);
+      elements.snapshotCards.innerHTML = `
+        <div class="${state.format === "simple" ? "simple-terminal simple-terminal-mini" : "snapshot-card"}">
+          ${state.format === "simple"
+            ? `<div class="simple-terminal-head">File Explorer</div>${renderSimpleExplorerPath(["Where2Buy", "Snapshot", "At a Glance"])}`
+            : `<div class="summary-card-top"><h3>No supported match</h3><span class="mini-tag">Check inputs</span></div>`}
+          <div class="${state.format === "simple" ? "simple-terminal-note" : "result-copy"}">${escapeHtml(noMatchMessage)}</div>
+        </div>
+      `;
+      return;
+    }
+
     if (state.format === "simple") {
       renderSimpleSnapshot(analysis);
       return;
@@ -1759,7 +2093,7 @@
     const snapshotPriceLabel = getRecommendedPriceLabel(analysis, analysis.scoring.recommended.device);
     const snapshotPriceCopy = getRecommendedPriceCopy(analysis, analysis.scoring.recommended.device);
     const computeLabel = RULES.getTierByRank(analysis.performance.computeFloorRank).label;
-    const ramLabel = RULES.getTierByRank(analysis.performance.recommendedRamRank).shortLabel;
+    const ramLabel = formatRamTierLabel(analysis.performance.recommendedRamRank, analysis.performance.fitModel);
 
     elements.snapshotCards.innerHTML = `
       <div class="snapshot-card">
@@ -1831,7 +2165,7 @@
   }
 
   function renderResults(analysis) {
-    if (!analysis.hasActiveLibrary || !analysis.scoring.recommended) {
+    if (!analysis.hasActiveLibrary) {
       if (state.format === "simple") {
         elements.resultsContent.innerHTML = `
           <div class="simple-terminal simple-terminal-full">
@@ -1847,6 +2181,28 @@
       elements.resultsContent.innerHTML = `
         <div class="empty-state">
           Pick a few systems and enter your library details to generate a recommendation.
+        </div>
+      `;
+      return;
+    }
+
+    if (!analysis.scoring.recommended) {
+      const noMatchMessage = buildNoSupportedMatchMessage(analysis);
+      if (state.format === "simple") {
+        elements.resultsContent.innerHTML = `
+          <div class="simple-terminal simple-terminal-full">
+            <div class="simple-terminal-head">File Explorer</div>
+            ${renderSimpleExplorerPath(["Where2Buy", "Recommendations", "Simple"])}
+            <div class="simple-terminal-command">No supported match</div>
+            <div class="simple-terminal-note">${escapeHtml(noMatchMessage)}</div>
+          </div>
+        `;
+        return;
+      }
+
+      elements.resultsContent.innerHTML = `
+        <div class="empty-state">
+          ${escapeHtml(noMatchMessage)}
         </div>
       `;
       return;
@@ -1898,15 +2254,17 @@
         <section class="story-hero">
           <div class="story-hero-grid">
             <div class="story-hero-copy">
-              <p class="story-kicker">AYN Scorecard</p>
+              <p class="story-kicker">Handheld Scorecard</p>
               <h3 class="story-title">${escapeHtml(recommendedTitle)}</h3>
               <p class="story-lead">${escapeHtml(buildStoryHeadline(analysis, recommendedCandidate, displayDevice))}</p>
               <div class="story-chip-row">
-                <span class="story-chip story-chip-accent">${escapeHtml(displayDevice.family || displayDevice.name)}</span>
-                <span class="story-chip">${displayDevice.formFactor === "clamshell" ? "Clamshell" : "Horizontal"}</span>
+                <span class="story-chip story-chip-accent">${escapeHtml(getBrandName(getDeviceBrandId(displayDevice)))}</span>
+                <span class="story-chip">${escapeHtml(displayDevice.family || displayDevice.name)}</span>
+                <span class="story-chip">${escapeHtml(formatFormFactorLabel(displayDevice.formFactor))}</span>
                 <span class="story-chip">${displayDevice.ram}GB RAM</span>
                 <span class="story-chip">${formatSize(displayDevice.storage)} storage</span>
                 <span class="story-chip">${escapeHtml(priceLabel)}</span>
+                ${displayDevice.preOrder ? `<span class="story-chip">Pre-order</span>` : ""}
               </div>
               ${preferenceCopy ? `<p class="story-subnote">${escapeHtml(preferenceCopy)}</p>` : ""}
               ${optionalFitCopy ? `<p class="story-subnote">${escapeHtml(optionalFitCopy)}</p>` : ""}
@@ -2033,8 +2391,8 @@
     elements.resultsContent.innerHTML = `
       <div class="simple-terminal simple-terminal-full">
         <div class="simple-terminal-head">File Explorer</div>
-        <div class="simple-terminal-head">Which AYN Device Should I Buy? [Version ${APP_VERSION}]</div>
-        ${renderSimpleExplorerPath(["Where2Buy", "Recommendations", "Simple", context.recommendedDevice.family || context.recommendedDevice.name])}
+        <div class="simple-terminal-head">Which Handheld Should I Buy? [Version ${APP_VERSION}]</div>
+        ${renderSimpleExplorerPath(["Where2Buy", "Recommendations", "Simple", getBrandName(getDeviceBrandId(context.recommendedDevice)), context.recommendedDevice.family || context.recommendedDevice.name])}
         <div class="simple-terminal-command">Folder Summary</div>
         ${renderSimpleTerminalSection("Recommendation Configuration", [
           ["Best Fit", context.recommendedTitle],
@@ -2057,7 +2415,7 @@
           ["RAM", `${context.scoreBreakdown.ram}/${FIT_SCORE_WEIGHTS.ram}`],
           ["Storage", `${context.scoreBreakdown.storage}/${FIT_SCORE_WEIGHTS.storage}`],
           ["Price vs Value", `${context.scoreBreakdown.value}/${FIT_SCORE_WEIGHTS.value}`],
-          ["Design + Screen", `${context.scoreBreakdown.preference}/${FIT_SCORE_WEIGHTS.preference}`],
+          ["Preferences", `${context.scoreBreakdown.preference}/${FIT_SCORE_WEIGHTS.preference}`],
           ["Total Score", `${context.scoreBreakdown.total}/100`]
         ])}
         ${renderSimpleTerminalSection("Library Loadout", analysis.breakdown.map((entry) => {
@@ -2156,6 +2514,10 @@
     const systemSummary = analysis.headlineSystems.join(", ");
     const storageSummary = `your expected storage lands around ${formatSize(analysis.storage.expectedAverage)}`;
     const ramSummary = `the recommended RAM tier is ${analysis.performance.recommendedRam}GB`;
+    if (analysis.fitModel === "retro-lite") {
+      return `${recommendedCandidate.device.name} lands on top because it fits ${systemSummary || "your selected mix"}, keeps the storage target around ${formatSize(analysis.storage.expectedAverage)}, and does not waste money on heavier Android style headroom you do not need here.`;
+    }
+
     return `${recommendedCandidate.device.name} lands on top because it fits ${systemSummary || "your selected mix"}, ${storageSummary}, and ${ramSummary} without drifting too far into overkill.`;
   }
 
@@ -2164,16 +2526,24 @@
       return `${displayDevice.name} already matches your real library well enough. The tool does not see a strong reason to spend more unless you want a different shape or extra headroom on purpose.`;
     }
 
-    if (state.formFactor === "clamshell") {
-      return `${recommendedCandidate.device.name} was chosen from the clamshell pool only, so the result stays focused on Thor style options.`;
-    }
+    if (state.useCaseLane !== "any") {
+      if (analysis.fitModel === "retro-lite") {
+        return `${recommendedCandidate.device.name} won inside the ${getUseCaseLaneName(state.useCaseLane).toLowerCase()} lane, so the result stays focused on lighter retro handhelds instead of drifting into stronger Android hardware.`;
+      }
 
-    if (state.formFactor === "horizontal") {
-      return `${recommendedCandidate.device.name} was chosen from the horizontal pool only, so the result stays focused on slab style options.`;
+      return `${recommendedCandidate.device.name} won inside the ${getUseCaseLaneName(state.useCaseLane).toLowerCase()} lane, so the result stays focused on that use case instead of the full mixed pool.`;
     }
 
     if (analysis.scoring.preferenceApplied && analysis.scoring.preferenceReason) {
-      return `${recommendedCandidate.device.name} clears the hard requirements and your form factor preference helped decide the final pick.`;
+      return `${recommendedCandidate.device.name} clears the hard requirements and your preference mix helped decide the final pick.`;
+    }
+
+    if (state.brandPreference !== "any") {
+      return `${recommendedCandidate.device.name} clears the hard requirements and lines up well with your ${getBrandName(state.brandPreference)} preference.`;
+    }
+
+    if (state.formFactor !== "no-preference") {
+      return `${recommendedCandidate.device.name} clears the hard requirements and lines up well with your ${formatFormFactorLabel(state.formFactor).toLowerCase()} preference.`;
     }
 
     return `${recommendedCandidate.device.name} clears the hard requirements for ${analysis.headlineSystems.join(", ") || "your setup"} and still keeps the recommendation honest.`;
@@ -2372,6 +2742,7 @@
         <div class="story-chip-row">
           <span class="story-chip story-chip-accent">${candidate.device.ram}GB RAM</span>
           <span class="story-chip">${formatSize(candidate.device.storage)} storage</span>
+          ${candidate.device.preOrder ? `<span class="story-chip">Pre-order</span>` : ""}
         </div>
         <p class="story-choice-copy">${escapeHtml(subtitle)}</p>
         <div class="story-list compact-story-list">
@@ -2393,6 +2764,7 @@
         <div class="story-chip-row">
           <span class="story-chip">${candidate.device.ram}GB RAM</span>
           <span class="story-chip">${formatSize(candidate.device.storage)} storage</span>
+          ${candidate.device.preOrder ? `<span class="story-chip">Pre-order</span>` : ""}
         </div>
         <p class="story-rank-copy">${escapeHtml(candidate.strengths[0] || "Solid overall fit.")}</p>
       </article>
@@ -2402,6 +2774,16 @@
   function buildRamExplanation(performance) {
     const recommendedTier = RULES.getTierByRank(performance.recommendedRamRank);
     const minimumTier = RULES.getTierByRank(performance.minimumRamRank);
+    const recommendedRamLabel = formatRamTierLabel(performance.recommendedRamRank, performance.fitModel);
+    const minimumRamLabel = formatRamTierLabel(performance.minimumRamRank, performance.fitModel);
+    if (performance.fitModel === "retro-lite") {
+      if (performance.recommendedRamRank === performance.minimumRamRank) {
+        return `${recommendedRamLabel} is the honest fit for this lighter retro lane. The tool is using a lower RAM model here because these handhelds are SD first and not built around Android style multitasking.`;
+      }
+
+      return `${minimumRamLabel} is the minimum that still makes sense here, but ${recommendedRamLabel} is safer if you want more breathing room inside the retro lane.`;
+    }
+
     if (performance.recommendedRamRank === performance.minimumRamRank) {
       return `${recommendedTier.label} is the honest fit for the library you entered. There was not enough borderline pressure to justify a higher RAM recommendation.`;
     }
@@ -2410,6 +2792,10 @@
   }
 
   function buildStorageNote(storage) {
+    if (storage.fitModel === "retro-lite") {
+      return "This run is using the lighter retro storage model. It assumes Linux style overhead, smaller app needs, and much more SD first storage behavior than the Android side of the pool.";
+    }
+
     const maxCurrentStorage = Math.max(...recommendableDevices.map((device) => device.storage));
     if (storage.comfortableUpper > maxCurrentStorage) {
       return storage.sdCardSizeGb
@@ -2436,22 +2822,32 @@
     lines.push(selectedSystemText);
     lines.push(`The storage model points to ${formatSize(analysis.storage.expectedAverage)} as the expected average and ${formatSize(analysis.storage.comfortableUpper)} as the comfortable upper range.`);
     lines.push(`The RAM model lands on ${analysis.performance.recommendedRam}GB, with ${analysis.performance.minimumRam}GB as the minimum acceptable tier.`);
+    if (analysis.fitModel === "retro-lite") {
+      lines.push("This library stays in the lighter retro fit model, so RAM and storage checks are scaled for SD first retro handhelds instead of heavier Android overhead.");
+    }
+    if (state.useCaseLane !== "any") {
+      if (state.formFactor !== "no-preference") {
+        lines.push(`${getUseCaseLaneName(state.useCaseLane)} is active, but ${formatFormFactorLabel(state.formFactor).toLowerCase()} stays a hard pool filter when it is selected.`);
+      } else {
+        lines.push(`${getUseCaseLaneName(state.useCaseLane)} is active, so the live pool is filtered to that lane first.`);
+      }
+    }
     if (analysis.storage.sdCardSizeGb) {
       lines.push(`This run includes a ${formatSdCardSize(analysis.storage.sdCardSizeGb)} SD card, but the tool still checks that internal storage is not overly cramped.`);
     }
-    if (state.formFactor === "clamshell") {
-      lines.push("Because clamshell was selected, the result pool is limited to Thor style options.");
-    } else if (state.formFactor === "horizontal") {
-      lines.push("Because horizontal was selected, the result pool is limited to slab style options.");
+    if (state.brandPreference !== "any") {
+      lines.push(`${getBrandName(state.brandPreference)} gets the strongest preference weight when the fit is close.`);
     }
     if (analysis.scoring.preferenceApplied && analysis.scoring.preferenceReason) {
       lines.push(analysis.scoring.preferenceReason);
     }
 
     if (state.formFactor === "clamshell") {
-      lines.push("Your clamshell preference now gets a stronger boost once a device already clears the performance and RAM floor.");
+      lines.push("Clamshell is locked as the active form factor pool.");
+    } else if (state.formFactor === "vertical") {
+      lines.push("Vertical is locked as the active form factor pool.");
     } else if (state.formFactor === "horizontal") {
-      lines.push("Your horizontal preference now has a stronger say among devices that already clear the hard requirements.");
+      lines.push("Horizontal is locked as the active form factor pool.");
     }
 
     if (state.futureProofBias >= 70) {
@@ -2472,8 +2868,8 @@
 
   function buildBumpedSection(analysis) {
     const bumpNames = analysis.performance.bumpReasons.map((entry) => entry.name);
-    const recommendedTier = RULES.getTierByRank(analysis.performance.recommendedRamRank).shortLabel;
-    const minimumTier = RULES.getTierByRank(analysis.performance.minimumRamRank).shortLabel;
+    const recommendedTier = formatRamTierLabel(analysis.performance.recommendedRamRank, analysis.performance.fitModel);
+    const minimumTier = formatRamTierLabel(analysis.performance.minimumRamRank, analysis.performance.fitModel);
 
     if (!bumpNames.length && !analysis.performance.futureProofBump) {
       return "";
@@ -2583,8 +2979,10 @@
     }
 
     const sorted = [...pool].sort((left, right) => {
-      if (left.device.priceIndex !== right.device.priceIndex) {
-        return left.device.priceIndex - right.device.priceIndex;
+      const leftPrice = getValidPrice(left.device) ?? Number.MAX_SAFE_INTEGER;
+      const rightPrice = getValidPrice(right.device) ?? Number.MAX_SAFE_INTEGER;
+      if (leftPrice !== rightPrice) {
+        return leftPrice - rightPrice;
       }
       return right.rankScore - left.rankScore;
     });
@@ -2593,19 +2991,124 @@
   }
 
   function getRecommendationDevicePool() {
-    if (state.formFactor === "clamshell") {
-      return recommendableDevices.filter((device) => device.formFactor === "clamshell");
+    return getRecommendationDevicePoolFor(state.useCaseLane, state.formFactor);
+  }
+
+  function getRecommendationDevicePoolFor(useCaseLaneId, formFactor) {
+    let pool = useCaseLaneId === "any"
+      ? recommendableDevices
+      : recommendableDevices.filter((device) => getDeviceUseCaseLane(device) === useCaseLaneId);
+
+    if (formFactor && formFactor !== "no-preference") {
+      const laneMatches = pool.filter((device) => device.formFactor === formFactor);
+      if (laneMatches.length) {
+        return laneMatches;
+      }
+
+      const globalMatches = recommendableDevices.filter((device) => device.formFactor === formFactor);
+      if (globalMatches.length) {
+        return globalMatches;
+      }
     }
 
-    if (state.formFactor === "horizontal") {
-      return recommendableDevices.filter((device) => device.formFactor === "horizontal");
+    return pool;
+  }
+
+  function getVisibleRecommendationPool() {
+    let pool = getRecommendationDevicePoolFor(state.useCaseLane, state.formFactor);
+
+    if (state.brandPreference !== "any") {
+      pool = pool.filter((device) => getDeviceBrandId(device) === state.brandPreference);
     }
 
-    return recommendableDevices;
+    return pool;
   }
 
   function getDeviceBrandId(device) {
     return device && device.brand ? device.brand : "ayn";
+  }
+
+  function getDeviceUseCaseLane(device) {
+    if (!device) {
+      return "balanced-android";
+    }
+
+    if (device.useCaseLane) {
+      return device.useCaseLane;
+    }
+
+    if (device.formFactor === "clamshell") {
+      return "clamshell";
+    }
+
+    if (device.computeRank >= 4) {
+      return "high-end-android";
+    }
+
+    if (device.computeRank >= 3) {
+      return "balanced-android";
+    }
+
+    return "retro-focused";
+  }
+
+  function getUseCaseLaneName(laneId) {
+    const selectedLane = (RULES.useCaseLanes || []).find((lane) => lane.id === laneId);
+    return selectedLane ? selectedLane.name : "Selected lane";
+  }
+
+  function getPreferredBrandOptions(useCaseLaneId, formFactor) {
+    const preferredLaneId = useCaseLaneId || (state ? state.useCaseLane : RULES.appDefaults.useCaseLane);
+    const preferredFormFactor = formFactor || (state ? state.formFactor : RULES.appDefaults.formFactor);
+    const liveBrandIds = new Set(
+      getRecommendationDevicePoolFor(preferredLaneId, preferredFormFactor)
+        .map((device) => getDeviceBrandId(device))
+    );
+    return (RULES.brands || []).filter((brand) => liveBrandIds.has(brand.id));
+  }
+
+  function updatePreferencePoolNote() {
+    if (!elements.preferencePoolNote) {
+      return;
+    }
+
+    const visiblePool = getVisibleRecommendationPool();
+    if (!visiblePool.length) {
+      elements.preferencePoolNote.hidden = true;
+      elements.preferencePoolNote.textContent = "";
+      return;
+    }
+
+    const brandIds = [...new Set(visiblePool.map((device) => getDeviceBrandId(device)))];
+    const deviceCount = visiblePool.length;
+    const brandCount = brandIds.length;
+    const filterParts = [];
+
+    if (state.useCaseLane !== "any") {
+      filterParts.push(getUseCaseLaneName(state.useCaseLane));
+    }
+
+    if (state.formFactor !== "no-preference") {
+      filterParts.push(formatFormFactorLabel(state.formFactor));
+    }
+
+    if (state.brandPreference !== "any") {
+      filterParts.push(getBrandName(state.brandPreference));
+    }
+
+    let message = `Current live pool: ${deviceCount} device${deviceCount === 1 ? "" : "s"} across ${brandCount} brand${brandCount === 1 ? "" : "s"}.`;
+
+    if (filterParts.length) {
+      message += ` Active filters: ${filterParts.join(", ")}.`;
+    }
+
+    if (state.brandPreference === "any" && brandCount <= 4) {
+      message += ` Brands in play: ${brandIds.map((brandId) => getBrandName(brandId)).join(", ")}.`;
+    }
+
+    elements.preferencePoolNote.hidden = false;
+    elements.preferencePoolNote.textContent = message;
+    elements.preferencePoolNote.classList.toggle("is-warning", deviceCount <= 2);
   }
 
   function getOwnedDeviceOptions(brandId) {
@@ -2629,6 +3132,88 @@
     return getOwnedDeviceOptions(brandId).find((device) => device.id === deviceId) || null;
   }
 
+  function getOwnedDeviceCompareProfile(brandId, deviceId) {
+    const brandProfiles = ownedDeviceCompareProfiles[brandId];
+    if (!brandProfiles) {
+      return null;
+    }
+
+    const matchedProfile = (brandProfiles.profiles || []).find((profile) => (profile.ids || []).includes(deviceId));
+    return matchedProfile || brandProfiles.fallback || null;
+  }
+
+  function getComparisonClass(device) {
+    if (!device) {
+      return "android-retro";
+    }
+
+    if (device.compareClass) {
+      return device.compareClass;
+    }
+
+    const brandId = getDeviceBrandId(device);
+
+    if (brandId === "gpd" || brandId === "onexplayer") {
+      return "windows-handheld";
+    }
+
+    if (brandId === "razer" || brandId === "logitech-g") {
+      return "cloud-streaming";
+    }
+
+    if (brandId === "gameforce" || brandId === "kinhank" || brandId === "miyoo" || brandId === "powkiddy" || brandId === "zpg") {
+      return "linux-retro";
+    }
+
+    if (brandId === "ayaneo" && device.name && !device.name.toLowerCase().includes("pocket")) {
+      return "windows-handheld";
+    }
+
+    if (brandId === "ayn" && device.name === "Loki") {
+      return "windows-handheld";
+    }
+
+    return "android-retro";
+  }
+
+  function getCurrentComparisonDevice() {
+    if (state.ownsDevice !== "yes" || !state.currentBrand || !state.currentDeviceId) {
+      return null;
+    }
+
+    if (deviceMap.has(state.currentDeviceId)) {
+      const currentDevice = deviceMap.get(state.currentDeviceId);
+      return {
+        ...currentDevice,
+        compareClass: getComparisonClass(currentDevice),
+        estimatedProfile: false
+      };
+    }
+
+    const ownedDevice = getOwnedDeviceById(state.currentBrand, state.currentDeviceId);
+    const comparisonProfile = getOwnedDeviceCompareProfile(state.currentBrand, state.currentDeviceId);
+
+    if (!ownedDevice || !comparisonProfile) {
+      return null;
+    }
+
+    return {
+      id: ownedDevice.id,
+      brand: state.currentBrand,
+      name: ownedDevice.name,
+      family: ownedDevice.name,
+      ram: comparisonProfile.ram,
+      storage: comparisonProfile.storage,
+      computeRank: comparisonProfile.computeRank,
+      formFactor: comparisonProfile.formFactor || "horizontal",
+      dualScreen: Boolean(comparisonProfile.dualScreen),
+      compareClass: comparisonProfile.compareClass || "android-retro",
+      estimatedProfile: true,
+      available: false,
+      recommendable: false
+    };
+  }
+
   function getBrandName(brandId) {
     return (brandMap.get(brandId) || brandMap.get("ayn") || { name: "AYN" }).name;
   }
@@ -2638,7 +3223,7 @@
       return "";
     }
 
-    if (state.currentBrand === "ayn" && state.currentDeviceId && deviceMap.has(state.currentDeviceId)) {
+    if (state.currentDeviceId && deviceMap.has(state.currentDeviceId)) {
       return deviceMap.get(state.currentDeviceId).name;
     }
 
@@ -2646,12 +3231,23 @@
     return ownedDevice ? ownedDevice.name : getBrandName(state.currentBrand);
   }
 
-  function buildOwnershipNote() {
-    if (state.ownsDevice !== "yes" || !state.currentBrand || state.currentBrand === "ayn" || !state.currentDeviceId) {
+  function buildOwnershipNote(currentDevice, currentComparison) {
+    if (state.ownsDevice !== "yes" || !state.currentBrand || !state.currentDeviceId) {
       return "";
     }
 
-    return `Current handheld noted: ${getOwnedDeviceLabel()}. Direct upgrade comparison is still AYN only in More Brands Pt. 1.`;
+    if (!currentDevice) {
+      return `Current handheld noted: ${getOwnedDeviceLabel()}. No family estimate is mapped yet for deeper comparison.`;
+    }
+
+    if (currentDevice.estimatedProfile) {
+      const laneNote = currentComparison && currentComparison.differentLane
+        ? " This is a cross-lane estimate, so treat it as directional."
+        : "";
+      return `Current handheld matched by family estimate: ${getOwnedDeviceLabel()}. This uses broad specs for comparison, not a full exact device sheet.${laneNote}`;
+    }
+
+    return "";
   }
 
   function getSdOvershootPenalty(device, storage, performance) {
@@ -2667,9 +3263,9 @@
     return Math.min(18, Math.round((overshoot / 128) * 3 * scale));
   }
 
-  function selectRecommendedCandidate(pool) {
+  function selectRecommendedCandidate(pool, fallbackPool) {
     const baseline = pool[0] || null;
-    if (!baseline || state.formFactor === "no-preference") {
+    if (!baseline) {
       return {
         candidate: baseline,
         preferenceApplied: false,
@@ -2677,30 +3273,63 @@
       };
     }
 
-    const preferredCandidates = pool.filter((candidate) => candidate.device.formFactor === state.formFactor);
-    const preferredTop = preferredCandidates[0] || null;
+    let candidate = baseline;
+    let preferenceApplied = false;
+    let reason = "";
+    let workingPool = pool;
+    const minimumFallbackPool = fallbackPool && fallbackPool.length ? fallbackPool : pool;
 
-    if (!preferredTop || preferredTop.device.id === baseline.device.id) {
-      return {
-        candidate: baseline,
-        preferenceApplied: false,
-        reason: ""
-      };
+    if (state.brandPreference !== "any") {
+      let preferredBrandCandidates = pool.filter((entry) => getDeviceBrandId(entry.device) === state.brandPreference);
+      let usedMinimumBrandFallback = false;
+
+      if (!preferredBrandCandidates.length) {
+        preferredBrandCandidates = minimumFallbackPool.filter((entry) => {
+          return getDeviceBrandId(entry.device) === state.brandPreference
+            && entry.meetsMinimumCore;
+        });
+        usedMinimumBrandFallback = preferredBrandCandidates.length > 0;
+      }
+
+      const preferredBrandTop = preferredBrandCandidates[0] || null;
+
+      if (preferredBrandTop && preferredBrandTop.device.id !== candidate.device.id) {
+        const brandOverrideWindow = getBrandOverrideWindow(usedMinimumBrandFallback);
+        if (preferredBrandTop.score >= candidate.score - brandOverrideWindow) {
+          candidate = preferredBrandTop;
+          workingPool = preferredBrandCandidates;
+          preferenceApplied = true;
+          reason = usedMinimumBrandFallback
+            ? `${getBrandName(state.brandPreference)} preference kept the final pick on ${preferredBrandTop.device.name} because it still clears the minimum fit without forcing a jump to ${baseline.device.name}.`
+            : `${getBrandName(state.brandPreference)} preference tipped the final pick toward ${preferredBrandTop.device.name} over ${baseline.device.name}.`;
+        }
+      } else if (preferredBrandTop) {
+        workingPool = preferredBrandCandidates;
+      }
     }
 
-    const overrideWindow = getFormFactorOverrideWindow();
-    if (preferredTop.score >= baseline.score - overrideWindow) {
-      return {
-        candidate: preferredTop,
-        preferenceApplied: true,
-        reason: `${formatFormFactorLabel(state.formFactor)} preference tipped the final pick toward ${preferredTop.device.name} over ${baseline.device.name}.`
-      };
+    if (state.formFactor !== "no-preference") {
+      const preferredFormCandidates = workingPool.filter((entry) => entry.device.formFactor === state.formFactor);
+      const preferredFormTop = preferredFormCandidates[0] || null;
+
+      if (preferredFormTop && preferredFormTop.device.id !== candidate.device.id) {
+        const formOverrideWindow = getFormFactorOverrideWindow();
+        if (preferredFormTop.score >= candidate.score - formOverrideWindow) {
+          const previousName = candidate.device.name;
+          const previousReason = reason;
+          candidate = preferredFormTop;
+          preferenceApplied = true;
+          reason = previousReason
+            ? `${previousReason} ${formatFormFactorLabel(state.formFactor)} preference then pushed the final pick to ${preferredFormTop.device.name}.`
+            : `${formatFormFactorLabel(state.formFactor)} preference tipped the final pick toward ${preferredFormTop.device.name} over ${previousName}.`;
+        }
+      }
     }
 
     return {
-      candidate: baseline,
-      preferenceApplied: false,
-      reason: ""
+      candidate,
+      preferenceApplied,
+      reason
     };
   }
 
@@ -2727,8 +3356,10 @@
     }
 
     const sorted = [...pool].sort((left, right) => {
-      if (left.device.priceIndex !== right.device.priceIndex) {
-        return left.device.priceIndex - right.device.priceIndex;
+      const leftPrice = getValidPrice(left.device) ?? Number.MAX_SAFE_INTEGER;
+      const rightPrice = getValidPrice(right.device) ?? Number.MAX_SAFE_INTEGER;
+      if (leftPrice !== rightPrice) {
+        return leftPrice - rightPrice;
       }
 
       return right.rankScore - left.rankScore;
@@ -2761,13 +3392,25 @@
     return futureProof || sorted[0];
   }
 
+  function getBrandOverrideWindow(usedMinimumBrandFallback) {
+    if (state.brandPreference !== "any") {
+      return usedMinimumBrandFallback ? 34 : 24;
+    }
+
+    return 0;
+  }
+
   function getFormFactorOverrideWindow() {
     if (state.formFactor === "clamshell") {
-      return 28;
+      return 14;
+    }
+
+    if (state.formFactor === "vertical") {
+      return 12;
     }
 
     if (state.formFactor === "horizontal") {
-      return 20;
+      return 12;
     }
 
     return 0;
@@ -2778,11 +3421,115 @@
       return "Clamshell";
     }
 
+    if (formFactor === "vertical") {
+      return "Vertical";
+    }
+
     if (formFactor === "horizontal") {
       return "Horizontal";
     }
 
     return "No preference";
+  }
+
+  function getSystemLaneSupport(system, laneId = state ? state.useCaseLane : RULES.appDefaults.useCaseLane) {
+    if (!system) {
+      return "supported";
+    }
+
+    if (laneId === "retro-focused") {
+      return system.retroFocusedSupport || "supported";
+    }
+
+    return "supported";
+  }
+
+  function getLaneSupportSummary(systemIds) {
+    const summary = { blocked: [], limited: [] };
+
+    if (state.useCaseLane !== "retro-focused") {
+      return summary;
+    }
+
+    systemIds.forEach((systemId) => {
+      const system = systemMap.get(systemId);
+      const laneSupport = getSystemLaneSupport(system);
+
+      if (!system) {
+        return;
+      }
+
+      if (laneSupport === "unsupported") {
+        summary.blocked.push(system.name);
+      } else if (laneSupport === "limited") {
+        summary.limited.push(system.name);
+      }
+    });
+
+    return summary;
+  }
+
+  function getActiveLaneSupportSummary(breakdown) {
+    return getLaneSupportSummary((breakdown || []).map((entry) => entry.id));
+  }
+
+  function updateSystemLaneNote() {
+    if (!elements.systemLaneNote) {
+      return;
+    }
+
+    const supportSummary = getLaneSupportSummary(state.selectedSystems);
+    let message = "";
+
+    if (state.useCaseLane === "retro-focused") {
+      message = "Low End Retro is meant for older retro handhelds. PSP, Dreamcast, Saturn, and heavier arcade sets sit near the upper edge. PS2, GameCube, Wii, 3DS, Vita, Android, PC, Switch, Wii U, PS3, and Xbox are outside this lane.";
+
+      if (supportSummary.blocked.length) {
+        message = `${formatJoinedList(supportSummary.blocked)} sit outside Low End Retro. Pick a stronger lane or remove them.`;
+      } else if (supportSummary.limited.length) {
+        message = `${formatJoinedList(supportSummary.limited)} sit near the upper edge of Low End Retro. The stronger picks in this lane handle them better than the cheapest ones.`;
+      }
+    }
+
+    elements.systemLaneNote.hidden = !message;
+    elements.systemLaneNote.textContent = message;
+    elements.systemLaneNote.classList.toggle("is-warning", state.useCaseLane === "retro-focused");
+  }
+
+  function buildSelectedLaneWarnings() {
+    const supportSummary = getLaneSupportSummary(state.selectedSystems);
+    const warnings = [];
+
+    if (supportSummary.blocked.length) {
+      warnings.push(`${formatJoinedList(supportSummary.blocked)} sit outside ${getUseCaseLaneName(state.useCaseLane)}. Pick a stronger lane or remove them.`);
+    }
+
+    if (supportSummary.limited.length) {
+      warnings.push(`${formatJoinedList(supportSummary.limited)} sit near the upper edge of ${getUseCaseLaneName(state.useCaseLane)}.`);
+    }
+
+    return warnings.map((warning) => `<div class="inline-note is-warning">${escapeHtml(warning)}</div>`).join("");
+  }
+
+  function buildNoSupportedMatchMessage(analysis) {
+    if (analysis.laneSupport && analysis.laneSupport.blocked.length) {
+      return `${getUseCaseLaneName(state.useCaseLane)} does not honestly cover ${formatJoinedList(analysis.laneSupport.blocked)}. Pick a stronger lane or remove those systems.`;
+    }
+
+    return "No supported recommendation was found from the current live pool for these inputs.";
+  }
+
+  function createEmptyScoring() {
+    return {
+      scored: [],
+      recommended: null,
+      preferenceApplied: false,
+      preferenceReason: "",
+      optionalFit: null,
+      budgetAlternative: null,
+      futureProofOption: null,
+      topCandidates: []
+    };
   }
 
   function getPcStats(pcState) {
@@ -2864,6 +3611,8 @@
       ownsDevice: state.ownsDevice,
       currentBrand: state.currentBrand,
       currentDeviceId: state.currentDeviceId,
+      useCaseLane: state.useCaseLane,
+      brandPreference: state.brandPreference,
       formFactor: state.formFactor,
       useSdCard: state.useSdCard,
       sdCardSizeGb: state.sdCardSizeGb,
@@ -2884,7 +3633,7 @@
 - ${FIT_SCORE_WEIGHTS.ram}% = enough RAM (smooth multitasking)
 - ${FIT_SCORE_WEIGHTS.storage}% = enough storage (space + speed)
 - ${FIT_SCORE_WEIGHTS.value}% = price vs what you get
-- ${FIT_SCORE_WEIGHTS.preference}% = design + screen (looks and style)
+- ${FIT_SCORE_WEIGHTS.preference}% = preferences after lane filtering (brand first, then form factor)
 
 Score Guideline
 - 90-100 = amazing
@@ -2892,7 +3641,8 @@ Score Guideline
 - 60-74 = okay
 - below 60 = bad
 
-This is based on your Games selected and not neccasarily highest system.`;
+This is based on your Games selected and not neccasarily highest system.
+Low End Retro uses lighter RAM and storage checks when the selected systems stay in that lane.`;
   }
 
   function buildFitScoreBreakdownInfo(scoreBreakdown) {
@@ -2902,7 +3652,7 @@ This is based on your Games selected and not neccasarily highest system.`;
 - RAM = ${scoreBreakdown.ram}/${FIT_SCORE_WEIGHTS.ram}
 - Storage = ${scoreBreakdown.storage}/${FIT_SCORE_WEIGHTS.storage}
 - Price vs Value = ${scoreBreakdown.value}/${FIT_SCORE_WEIGHTS.value}
-- Design + Screen = ${scoreBreakdown.preference}/${FIT_SCORE_WEIGHTS.preference}
+- Preferences = ${scoreBreakdown.preference}/${FIT_SCORE_WEIGHTS.preference}
 
 Total = ${scoreBreakdown.total}/100`;
   }
@@ -2919,6 +3669,13 @@ Total = ${scoreBreakdown.total}/100`;
 
   function buildExportText(analysis) {
     const lines = [];
+    if (!analysis.scoring.recommended) {
+      lines.push("Which Handheld Should I Buy?");
+      lines.push("");
+      lines.push(buildNoSupportedMatchMessage(analysis));
+      return lines.join("\n");
+    }
+
     const recommendedCandidate = analysis.scoring.recommended;
     const currentSection = analysis.currentComparison
       ? [
@@ -2929,7 +3686,7 @@ Total = ${scoreBreakdown.total}/100`;
       ]
       : [];
 
-    lines.push("Which AYN Device Should I Buy?");
+    lines.push("Which Handheld Should I Buy?");
     lines.push("");
     lines.push(`Recommended Device: ${analysis.keepCurrent && analysis.currentComparison ? `Keep your current ${analysis.currentComparison.currentDevice.name}` : recommendedCandidate.device.name}`);
     lines.push(`Local Price: ${getRecommendedPriceLabel(analysis, recommendedCandidate.device)}`);
@@ -3062,6 +3819,22 @@ Total = ${scoreBreakdown.total}/100`;
     return 0;
   }
 
+  function getPerformanceUsageBand(entry) {
+    if (entry.type === "system") {
+      return "edge";
+    }
+
+    return entry.usageBand;
+  }
+
+  function getPerformanceUsageScale(entry) {
+    if (entry.type === "system") {
+      return RULES.libraryScale(1);
+    }
+
+    return RULES.libraryScale(entry.effectiveCount);
+  }
+
   function getTierWeightByRank(rank) {
     const map = {
       1: 1.0,
@@ -3146,7 +3919,9 @@ Total = ${scoreBreakdown.total}/100`;
       return "Your current device already fits this setup, so the tool does not see a needed new purchase.";
     }
 
-    return `Official AYN store price snapshot for ${device.name}.`;
+    const brandName = getBrandName(getDeviceBrandId(device));
+    const preOrderNote = device.preOrder ? " Current listing is still marked pre-order." : "";
+    return `Official ${brandName} store price snapshot for ${device.name}.${preOrderNote}`;
   }
 
   function formatRange(lowGb, highGb) {
