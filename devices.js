@@ -15,8 +15,12 @@
       positioning: "premium",
       priceIndex: 3,
       priceUsd: 339,
+      storageSpec: "UFS 3.1",
+      priorStorageSpec: "UFS 4.0",
+      currentBatchLabel: "Batch 7 pre-order",
       available: true,
-      recommendable: true
+      recommendable: true,
+      preOrder: true
     },
     {
       id: "odin3-pro",
@@ -33,8 +37,12 @@
       positioning: "premium",
       priceIndex: 4,
       priceUsd: 439,
+      storageSpec: "UFS 3.1",
+      priorStorageSpec: "UFS 4.0",
+      currentBatchLabel: "Batch 7 pre-order",
       available: true,
-      recommendable: true
+      recommendable: true,
+      preOrder: true
     },
     {
       id: "odin3-max",
@@ -51,8 +59,12 @@
       positioning: "premium",
       priceIndex: 5,
       priceUsd: 489,
+      storageSpec: "UFS 3.1",
+      priorStorageSpec: "UFS 4.0",
+      currentBatchLabel: "Batch 7 pre-order",
       available: true,
-      recommendable: true
+      recommendable: true,
+      preOrder: true
     },
     {
       id: "odin3-ultra",
@@ -69,8 +81,12 @@
       positioning: "premium",
       priceIndex: 6,
       priceUsd: 519,
+      storageSpec: "UFS 3.1",
+      priorStorageSpec: "UFS 4.0",
+      currentBatchLabel: "Batch 7 pre-order",
       available: true,
-      recommendable: true
+      recommendable: true,
+      preOrder: true
     },
     {
       id: "thor-lite",
@@ -87,8 +103,12 @@
       positioning: "dual-screen",
       priceIndex: 2,
       priceUsd: 249,
+      storageSpec: "UFS 3.1",
+      priorStorageSpec: "UFS 4.0",
+      currentBatchLabel: "Batch 6 pre-order",
       available: true,
-      recommendable: true
+      recommendable: true,
+      preOrder: true
     },
     {
       id: "thor-base",
@@ -105,8 +125,12 @@
       positioning: "dual-screen",
       priceIndex: 3,
       priceUsd: 319,
+      storageSpec: "UFS 3.1",
+      priorStorageSpec: "UFS 4.0",
+      currentBatchLabel: "Batch 6 pre-order",
       available: true,
-      recommendable: true
+      recommendable: true,
+      preOrder: true
     },
     {
       id: "thor-pro",
@@ -123,8 +147,12 @@
       positioning: "dual-screen",
       priceIndex: 4,
       priceUsd: 399,
+      storageSpec: "UFS 3.1",
+      priorStorageSpec: "UFS 4.0",
+      currentBatchLabel: "Batch 6 pre-order",
       available: true,
-      recommendable: true
+      recommendable: true,
+      preOrder: true
     },
     {
       id: "thor-max",
@@ -141,8 +169,12 @@
       positioning: "dual-screen",
       priceIndex: 5,
       priceUsd: 489,
+      storageSpec: "UFS 3.1",
+      priorStorageSpec: "UFS 4.0",
+      currentBatchLabel: "Batch 6 pre-order",
       available: true,
-      recommendable: true
+      recommendable: true,
+      preOrder: true
     },
     {
       id: "odin2-portal-base",

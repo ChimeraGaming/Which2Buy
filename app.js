@@ -1,5 +1,5 @@
 (function () {
-  const APP_VERSION = "v.5.5.0";
+  const APP_VERSION = "v.5.6.0";
   const LOCAL_STORAGE_KEY = "which2buy-state-v1";
   const FIT_SCORE_WEIGHTS = {
     performance: 35,
@@ -1501,6 +1501,12 @@
         cautions.push("Internal storage falls short of the likely minimum.");
       }
 
+      const currentStoreStorageAdjustment = getCurrentStoreStorageAdjustment(device);
+      rankScore += currentStoreStorageAdjustment.rankScore;
+      if (currentStoreStorageAdjustment.note) {
+        cautions.push(currentStoreStorageAdjustment.note);
+      }
+
       const clearsCoreFloor = device.computeRank >= performance.computeFloorRank
         && device.ram >= performance.minimumRam;
       const preferenceWeight = clearsCoreFloor ? 1.4 : 1;
@@ -1787,6 +1793,34 @@
     };
   }
 
+  function hasCurrentStoreStorageChange(device) {
+    return Boolean(
+      device
+      && device.currentBatchLabel
+      && device.storageSpec
+      && device.priorStorageSpec
+      && device.storageSpec !== device.priorStorageSpec
+    );
+  }
+
+  function getCurrentStoreStorageAdjustment(device) {
+    if (!hasCurrentStoreStorageChange(device)) {
+      return {
+        storageScore: 0,
+        valueScore: 0,
+        rankScore: 0,
+        note: ""
+      };
+    }
+
+    return {
+      storageScore: -1,
+      valueScore: -1,
+      rankScore: -6,
+      note: `Current ${device.currentBatchLabel} listing uses ${device.storageSpec}. In real use this is mostly a transfer and install tradeoff, not a major emulation hit.`
+    };
+  }
+
   function getPerformanceFitPoints(device, performance, budgetWeight, futureWeight) {
     const delta = device.computeRank - performance.computeFloorRank;
     const retroLiteModel = performance.fitModel === "retro-lite";
@@ -1901,6 +1935,8 @@
       }
     }
 
+    points += getCurrentStoreStorageAdjustment(device).storageScore;
+
     return RULES.clamp(points, 0, FIT_SCORE_WEIGHTS.storage);
   }
 
@@ -1911,14 +1947,14 @@
       const lighterDeviceBonus = device.computeRank <= 2 ? 1.5 : 0;
       const heavyAndroidPenalty = device.computeRank >= 3 ? 2.5 + (budgetWeight * 1.5) : 0;
       return RULES.clamp(
-        (baseValue * (0.9 + (budgetWeight * 0.25))) + 1.5 + lighterDeviceBonus - (futureWeight * 0.5) - heavyAndroidPenalty,
+        (baseValue * (0.9 + (budgetWeight * 0.25))) + 1.5 + lighterDeviceBonus - (futureWeight * 0.5) - heavyAndroidPenalty + getCurrentStoreStorageAdjustment(device).valueScore,
         2,
         FIT_SCORE_WEIGHTS.value
       );
     }
 
     return RULES.clamp(
-      (baseValue * (0.55 + (budgetWeight * 0.45))) + (futureWeight * 1.5),
+      (baseValue * (0.55 + (budgetWeight * 0.45))) + (futureWeight * 1.5) + getCurrentStoreStorageAdjustment(device).valueScore,
       1,
       FIT_SCORE_WEIGHTS.value
     );
@@ -2263,6 +2299,7 @@
                 <span class="story-chip">${escapeHtml(formatFormFactorLabel(displayDevice.formFactor))}</span>
                 <span class="story-chip">${displayDevice.ram}GB RAM</span>
                 <span class="story-chip">${formatSize(displayDevice.storage)} storage</span>
+                ${displayDevice.storageSpec ? `<span class="story-chip">${escapeHtml(displayDevice.storageSpec)}</span>` : ""}
                 <span class="story-chip">${escapeHtml(priceLabel)}</span>
                 ${displayDevice.preOrder ? `<span class="story-chip">Pre-order</span>` : ""}
               </div>
@@ -2742,6 +2779,7 @@
         <div class="story-chip-row">
           <span class="story-chip story-chip-accent">${candidate.device.ram}GB RAM</span>
           <span class="story-chip">${formatSize(candidate.device.storage)} storage</span>
+          ${candidate.device.storageSpec ? `<span class="story-chip">${escapeHtml(candidate.device.storageSpec)}</span>` : ""}
           ${candidate.device.preOrder ? `<span class="story-chip">Pre-order</span>` : ""}
         </div>
         <p class="story-choice-copy">${escapeHtml(subtitle)}</p>
@@ -2764,6 +2802,7 @@
         <div class="story-chip-row">
           <span class="story-chip">${candidate.device.ram}GB RAM</span>
           <span class="story-chip">${formatSize(candidate.device.storage)} storage</span>
+          ${candidate.device.storageSpec ? `<span class="story-chip">${escapeHtml(candidate.device.storageSpec)}</span>` : ""}
           ${candidate.device.preOrder ? `<span class="story-chip">Pre-order</span>` : ""}
         </div>
         <p class="story-rank-copy">${escapeHtml(candidate.strengths[0] || "Solid overall fit.")}</p>
@@ -3920,8 +3959,13 @@ Total = ${scoreBreakdown.total}/100`;
     }
 
     const brandName = getBrandName(getDeviceBrandId(device));
-    const preOrderNote = device.preOrder ? " Current listing is still marked pre-order." : "";
-    return `Official ${brandName} store price snapshot for ${device.name}.${preOrderNote}`;
+    const batchStorageNote = hasCurrentStoreStorageChange(device)
+      ? ` Current ${device.currentBatchLabel} listing shows ${device.storageSpec} instead of the earlier ${device.priorStorageSpec} spec. On paper that is slower, but for most people the practical hit is mostly installs, transfers, and other large file work. Emulator and game performance are usually affected much less than people are making it sound.`
+      : "";
+    const preOrderNote = device.preOrder && !(device.currentBatchLabel && /pre-order/i.test(device.currentBatchLabel))
+      ? " Current listing is still marked pre-order."
+      : "";
+    return `Official ${brandName} store price snapshot for ${device.name}.${batchStorageNote}${preOrderNote}`;
   }
 
   function formatRange(lowGb, highGb) {
