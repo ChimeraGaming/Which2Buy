@@ -1464,6 +1464,13 @@ button {
   line-height: 1.6;
 }
 
+.last-updated {
+  margin: 10px 0 0;
+  color: var(--accent-strong);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
 .hero-actions {
   width: min(100%, 320px);
   display: grid;

@@ -168,7 +168,7 @@
       dualScreen: true,
       positioning: "dual-screen",
       priceIndex: 5,
-      priceUsd: 489,
+      priceUsd: 549,
       storageSpec: "UFS 3.1",
       priorStorageSpec: "UFS 4.0",
       currentBatchLabel: "Batch 6 pre-order",
@@ -280,7 +280,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 1,
-      priceUsd: 179,
+      priceUsd: 209,
       available: true,
       recommendable: true
     },
@@ -353,7 +353,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 2,
-      priceUsd: 129,
+      priceUsd: 149,
       available: true,
       recommendable: true
     },
@@ -371,7 +371,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 1,
-      priceUsd: 137.99,
+      priceUsd: 141.78,
       available: true,
       recommendable: true
     },
@@ -443,7 +443,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 1,
-      priceUsd: 169.99,
+      priceUsd: 180.39,
       available: true,
       recommendable: true
     },
@@ -461,7 +461,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 3,
-      priceUsd: 269.99,
+      priceUsd: 274.02,
       available: true,
       recommendable: true
     },
@@ -515,7 +515,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 1,
-      priceUsd: 54.99,
+      priceUsd: 57.99,
       available: true,
       recommendable: true
     },
@@ -569,7 +569,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 1,
-      priceUsd: 58.92,
+      priceUsd: 67.99,
       available: true,
       recommendable: true
     },
@@ -587,7 +587,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 1,
-      priceUsd: 63.99,
+      priceUsd: 67.99,
       available: true,
       recommendable: true
     },
@@ -605,7 +605,7 @@
       dualScreen: false,
       positioning: "balanced",
       priceIndex: 1,
-      priceUsd: 57.11,
+      priceUsd: 61.91,
       available: true,
       recommendable: true
     },
@@ -930,7 +930,7 @@
       dualScreen: true,
       positioning: "dual-screen",
       priceIndex: 6,
-      priceUsd: 639,
+      priceUsd: 559,
       available: true,
       recommendable: true,
       preOrder: true
