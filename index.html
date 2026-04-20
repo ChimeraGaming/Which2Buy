@@ -20,7 +20,7 @@
   <meta name="twitter:description" content="A GitHub Pages tool that recommends the best current handheld fit based on your systems, storage needs, performance tier, form factor, and upgrade value.">
   <meta name="twitter:image" content="https://chimeragaming.github.io/Which2Buy/Which2Buy.png">
   <meta name="twitter:image:alt" content="Which Handheld Should I Buy preview image">
-  <link rel="stylesheet" href="styles.css?v=5.6.0">
+  <link rel="stylesheet" href="styles.css?v=5.6.1">
 </head>
 <body data-theme="canyon-dust" data-format="default">
   <div class="theme-atmosphere" aria-hidden="true"></div>
@@ -182,15 +182,21 @@
         <p class="eyebrow">Config driven handheld picker</p>
         <div class="hero-title-row">
           <h1>Which Handheld Should I Buy?</h1>
-        <span class="version-badge">v.5.6.0</span>
+        <span class="version-badge">v.5.6.1</span>
         </div>
         <p class="subtitle">
           Transparent recommendations across current official AYN, Retroid, ANBERNIC, AYANEO, Powkiddy, and Miyoo handhelds.
-          Step 0 now also compares your current device directly when that model is already in the live recommendation pool.
+          Recommendation mode builds a live fit for your library. Compated mode checks two handhelds directly.
         </p>
       </div>
       <div class="hero-actions">
         <div class="picker-stack">
+          <div class="theme-picker-block">
+            <label class="field compact-field">
+              <span>Mode</span>
+              <select id="modeSelect" aria-label="Mode"></select>
+            </label>
+          </div>
           <div class="theme-picker-block">
             <label class="field compact-field">
               <span>Theme</span>
@@ -222,6 +228,16 @@
     </header>
 
     <main class="layout">
+      <section id="modeGatePanel" class="panel mode-gate-panel">
+        <div class="mode-gate-copy">
+          <p class="section-kicker">Start</p>
+          <h2>Pick a mode first</h2>
+          <p class="subtitle">
+            Choose Recommendation to build a live fit for your library, or choose Compated to check two handhelds directly.
+          </p>
+        </div>
+      </section>
+
       <div class="layout-top">
         <section class="panel main-panel">
           <form id="quizForm" novalidate>
@@ -388,6 +404,52 @@
               <span id="saveStatus" class="save-status" aria-live="polite"></span>
             </div>
           </form>
+
+          <section id="compareModePanel" class="compare-mode-panel" hidden>
+            <div class="section-heading compact-heading">
+              <p class="section-kicker">Compare</p>
+              <h2>Direct device check</h2>
+            </div>
+            <p class="hint-text">
+              Pick two handhelds to compare them directly. Devices outside the live pool still show up, but those results can drift because they use older listings or family level estimates.
+            </p>
+            <div class="compare-mode-grid">
+              <section class="compare-device-panel">
+                <div class="section-heading compact-heading">
+                  <p class="section-kicker">Device 1</p>
+                  <h3>Left device</h3>
+                </div>
+                <div class="field">
+                  <label for="compareLeftBrandSelect">Brand</label>
+                  <select id="compareLeftBrandSelect"></select>
+                </div>
+                <div class="field">
+                  <label for="compareLeftDeviceSelect">Device</label>
+                  <select id="compareLeftDeviceSelect"></select>
+                </div>
+                <p id="compareLeftNotice" class="hint-text is-warning" hidden></p>
+              </section>
+
+              <section class="compare-device-panel">
+                <div class="section-heading compact-heading">
+                  <p class="section-kicker">Device 2</p>
+                  <h3>Right device</h3>
+                </div>
+                <div class="field">
+                  <label for="compareRightBrandSelect">Brand</label>
+                  <select id="compareRightBrandSelect"></select>
+                </div>
+                <div class="field">
+                  <label for="compareRightDeviceSelect">Device</label>
+                  <select id="compareRightDeviceSelect"></select>
+                </div>
+                <p id="compareRightNotice" class="hint-text is-warning" hidden></p>
+              </section>
+            </div>
+            <div class="action-row">
+              <button id="compareButton" class="primary-button" type="button">Compare Devices</button>
+            </div>
+          </section>
         </section>
 
         <aside class="sidebar">
@@ -404,8 +466,8 @@
       <section class="panel results-panel" id="resultsSection">
         <div class="results-frame">
           <div class="section-heading compact-heading">
-            <p class="section-kicker">Results</p>
-            <h2>Scorecard</h2>
+            <p id="resultsKicker" class="section-kicker">Results</p>
+            <h2 id="resultsTitle">Scorecard</h2>
           </div>
           <div id="resultsContent" class="results-content">
             <div class="empty-state">

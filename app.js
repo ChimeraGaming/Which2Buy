@@ -1,5 +1,5 @@
 (function () {
-  const APP_VERSION = "v.5.6.0";
+  const APP_VERSION = "v.5.6.1";
   const LOCAL_STORAGE_KEY = "which2buy-state-v1";
   const FIT_SCORE_WEIGHTS = {
     performance: 35,
@@ -20,6 +20,7 @@
   const ownedDeviceCompareProfiles = RULES.ownedDeviceCompareProfiles || {};
   const useCaseLaneProfiles = RULES.useCaseLaneProfiles || {};
   const recommendableDevices = DEVICES.filter((device) => device.available && device.recommendable);
+  const recommendableDeviceIds = new Set(recommendableDevices.map((device) => device.id));
   const elements = {};
   const usdFormatter = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -75,12 +76,15 @@
     cacheElements();
     enhanceFormSections();
     state = loadState();
+    populateModeSelect();
     populateThemeSelect();
     populateFormatSelect();
     populateUseCaseLaneSelect();
     populateBrandPreferenceSelect();
     populateCurrentBrandSelect();
     populateCurrentDeviceSelect();
+    populateCompareBrandSelects();
+    populateCompareDeviceSelects();
     bindStaticEvents();
     applyStateToControls();
     renderSystemSelector();
@@ -89,17 +93,29 @@
   }
 
   function cacheElements() {
+    elements.layoutTop = document.querySelector(".layout-top");
+    elements.sidebar = document.querySelector(".sidebar");
+    elements.modeGatePanel = document.getElementById("modeGatePanel");
+    elements.modeSelect = document.getElementById("modeSelect");
     elements.themeSelect = document.getElementById("themeSelect");
     elements.formatSelect = document.getElementById("formatSelect");
     elements.shareButton = document.getElementById("shareButton");
     elements.exportButton = document.getElementById("exportButton");
     elements.quizForm = document.getElementById("quizForm");
+    elements.compareModePanel = document.getElementById("compareModePanel");
+    elements.compareButton = document.getElementById("compareButton");
     elements.ownsDeviceToggle = document.getElementById("ownsDeviceToggle");
     elements.currentDeviceField = document.getElementById("currentDeviceField");
     elements.currentBrandSelect = document.getElementById("currentBrandSelect");
     elements.currentBrandDeviceField = document.getElementById("currentBrandDeviceField");
     elements.currentDeviceSelect = document.getElementById("currentDeviceSelect");
     elements.currentOwnershipNotice = document.getElementById("currentOwnershipNotice");
+    elements.compareLeftBrandSelect = document.getElementById("compareLeftBrandSelect");
+    elements.compareLeftDeviceSelect = document.getElementById("compareLeftDeviceSelect");
+    elements.compareLeftNotice = document.getElementById("compareLeftNotice");
+    elements.compareRightBrandSelect = document.getElementById("compareRightBrandSelect");
+    elements.compareRightDeviceSelect = document.getElementById("compareRightDeviceSelect");
+    elements.compareRightNotice = document.getElementById("compareRightNotice");
     elements.useCaseLaneSelect = document.getElementById("useCaseLaneSelect");
     elements.formFactorSimpleSelect = document.getElementById("formFactorSimpleSelect");
     elements.brandPreferenceSelect = document.getElementById("brandPreferenceSelect");
@@ -118,6 +134,9 @@
     elements.snapshotCards = document.getElementById("snapshotCards");
     elements.resultsContent = document.getElementById("resultsContent");
     elements.resultsSection = document.getElementById("resultsSection");
+    elements.changelogSection = document.getElementById("changelogSection");
+    elements.resultsKicker = document.getElementById("resultsKicker");
+    elements.resultsTitle = document.getElementById("resultsTitle");
     elements.saveStatus = document.getElementById("saveStatus");
     elements.osReserveInput = document.getElementById("osReserveInput");
     elements.appReserveInput = document.getElementById("appReserveInput");
@@ -144,6 +163,8 @@
         ...(urlState.systems || {})
       }
     };
+
+    merged.mode = typeof urlState.mode === "string" ? urlState.mode : defaults.mode;
 
     if (Array.isArray(urlState.selectedSystems)) {
       merged.selectedSystems = urlState.selectedSystems;
@@ -177,6 +198,7 @@
     const normalized = RULES.cloneDefaults();
     const validThemeIds = new Set(RULES.themes.map((theme) => theme.id));
     const validFormatIds = new Set(RULES.formats.map((format) => format.id));
+    const validModeIds = new Set((RULES.workflowModes || []).map((mode) => mode.id));
     const validLaneIds = new Set((RULES.useCaseLanes || []).map((lane) => lane.id));
     const validBrandIds = new Set((RULES.brands || []).map((brand) => brand.id));
     const validSelected = Array.isArray(rawState.selectedSystems)
@@ -186,12 +208,21 @@
     normalized.theme = validThemeIds.has(rawState.theme) ? rawState.theme : normalized.theme;
     const normalizedFormat = rawState.format === "properties" ? "simple" : rawState.format;
     normalized.format = validFormatIds.has(normalizedFormat) ? normalizedFormat : normalized.format;
+    normalized.mode = validModeIds.has(rawState.mode) ? rawState.mode : normalized.mode;
     normalized.useCaseLane = validLaneIds.has(rawState.useCaseLane) ? rawState.useCaseLane : normalized.useCaseLane;
     const validPreferenceBrandIds = new Set(["any", ...getPreferredBrandOptions(normalized.useCaseLane, normalized.formFactor).map((brand) => brand.id)]);
     normalized.ownsDevice = rawState.ownsDevice === "yes" ? "yes" : "no";
     normalized.currentBrand = validBrandIds.has(rawState.currentBrand) ? rawState.currentBrand : normalized.currentBrand;
     normalized.currentDeviceId = getOwnedDeviceOptions(normalized.currentBrand).some((device) => device.id === rawState.currentDeviceId)
       ? rawState.currentDeviceId
+      : "";
+    normalized.compareLeftBrand = validBrandIds.has(rawState.compareLeftBrand) ? rawState.compareLeftBrand : normalized.compareLeftBrand;
+    normalized.compareLeftDeviceId = getOwnedDeviceOptions(normalized.compareLeftBrand).some((device) => device.id === rawState.compareLeftDeviceId)
+      ? rawState.compareLeftDeviceId
+      : "";
+    normalized.compareRightBrand = validBrandIds.has(rawState.compareRightBrand) ? rawState.compareRightBrand : normalized.compareRightBrand;
+    normalized.compareRightDeviceId = getOwnedDeviceOptions(normalized.compareRightBrand).some((device) => device.id === rawState.compareRightDeviceId)
+      ? rawState.compareRightDeviceId
       : "";
     normalized.brandPreference = validPreferenceBrandIds.has(rawState.brandPreference) ? rawState.brandPreference : normalized.brandPreference;
     normalized.formFactor = ["horizontal", "vertical", "clamshell", "no-preference"].includes(rawState.formFactor)
@@ -263,6 +294,12 @@
   }
 
   function bindStaticEvents() {
+    elements.modeSelect.addEventListener("change", (event) => {
+      state.mode = event.target.value;
+      applyMode();
+      updateDerivedUi(false);
+    });
+
     elements.ownsDeviceToggle.addEventListener("change", (event) => {
       state.ownsDevice = event.target.checked ? "yes" : "no";
       if (state.ownsDevice === "no") {
@@ -321,6 +358,41 @@
 
     elements.currentDeviceSelect.addEventListener("change", (event) => {
       state.currentDeviceId = event.target.value;
+      updateCurrentOwnershipNotice();
+      updateDerivedUi(false);
+    });
+
+    elements.compareLeftBrandSelect.addEventListener("change", (event) => {
+      const previousBrand = state.compareLeftBrand;
+      state.compareLeftBrand = event.target.value;
+      if (state.compareLeftBrand !== previousBrand) {
+        state.compareLeftDeviceId = "";
+      }
+      populateCompareDeviceSelect("left");
+      updateCompareSelectionNotice("left");
+      updateDerivedUi(false);
+    });
+
+    elements.compareLeftDeviceSelect.addEventListener("change", (event) => {
+      state.compareLeftDeviceId = event.target.value;
+      updateCompareSelectionNotice("left");
+      updateDerivedUi(false);
+    });
+
+    elements.compareRightBrandSelect.addEventListener("change", (event) => {
+      const previousBrand = state.compareRightBrand;
+      state.compareRightBrand = event.target.value;
+      if (state.compareRightBrand !== previousBrand) {
+        state.compareRightDeviceId = "";
+      }
+      populateCompareDeviceSelect("right");
+      updateCompareSelectionNotice("right");
+      updateDerivedUi(false);
+    });
+
+    elements.compareRightDeviceSelect.addEventListener("change", (event) => {
+      state.compareRightDeviceId = event.target.value;
+      updateCompareSelectionNotice("right");
       updateDerivedUi(false);
     });
 
@@ -365,11 +437,19 @@
 
     elements.shareButton.addEventListener("click", handleShare);
     elements.exportButton.addEventListener("click", handleExport);
+    elements.compareButton.addEventListener("click", () => updateDerivedUi(true));
 
     elements.quizForm.addEventListener("submit", (event) => {
       event.preventDefault();
       updateDerivedUi(true);
     });
+  }
+
+  function populateModeSelect() {
+    elements.modeSelect.innerHTML = [
+      `<option value="">Pick a mode</option>`,
+      ...(RULES.workflowModes || []).map((mode) => `<option value="${mode.id}">${escapeHtml(mode.name)}</option>`)
+    ].join("");
   }
 
   function populateThemeSelect() {
@@ -395,6 +475,13 @@
       .join("");
   }
 
+  function populateBrandSelect(selectElement, placeholder) {
+    selectElement.innerHTML = [
+      `<option value="">${placeholder}</option>`,
+      ...(RULES.brands || []).map((brand) => `<option value="${brand.id}">${escapeHtml(brand.name)}</option>`)
+    ].join("");
+  }
+
   function populateUseCaseLaneSelect() {
     elements.useCaseLaneSelect.innerHTML = (RULES.useCaseLanes || [])
       .map((lane) => `<option value="${lane.id}">${escapeHtml(lane.name)}</option>`)
@@ -409,23 +496,41 @@
   }
 
   function populateCurrentBrandSelect() {
-    elements.currentBrandSelect.innerHTML = [
-      `<option value="">Select your brand</option>`,
-      ...(RULES.brands || []).map((brand) => `<option value="${brand.id}">${escapeHtml(brand.name)}</option>`)
-    ].join("");
+    populateBrandSelect(elements.currentBrandSelect, "Select your brand");
   }
 
   function populateCurrentDeviceSelect() {
-    const currentBrandDevices = getOwnedDeviceOptions(state ? state.currentBrand : "");
-    const placeholder = state && state.currentBrand ? `Select your ${escapeHtml(getBrandName(state.currentBrand))} device` : "Select your brand first";
-    elements.currentDeviceSelect.innerHTML = [
+    populateOwnedDeviceSelect(elements.currentDeviceSelect, state ? state.currentBrand : "");
+  }
+
+  function populateCompareBrandSelects() {
+    populateBrandSelect(elements.compareLeftBrandSelect, "Select a brand");
+    populateBrandSelect(elements.compareRightBrandSelect, "Select a brand");
+  }
+
+  function populateCompareDeviceSelects() {
+    populateCompareDeviceSelect("left");
+    populateCompareDeviceSelect("right");
+  }
+
+  function populateCompareDeviceSelect(side) {
+    const isLeft = side === "left";
+    const selectElement = isLeft ? elements.compareLeftDeviceSelect : elements.compareRightDeviceSelect;
+    const brandId = isLeft ? state.compareLeftBrand : state.compareRightBrand;
+    populateOwnedDeviceSelect(selectElement, brandId);
+  }
+
+  function populateOwnedDeviceSelect(selectElement, brandId) {
+    const devices = getOwnedDeviceOptions(brandId);
+    const placeholder = brandId ? `Select ${escapeHtml(getBrandName(brandId))} device` : "Select your brand first";
+    selectElement.innerHTML = [
       `<option value="">${placeholder}</option>`,
-      ...currentBrandDevices
-        .map((device) => `<option value="${device.id}">${escapeHtml(device.name)}</option>`)
+      ...devices.map((device) => `<option value="${device.id}">${escapeHtml(device.name)}</option>`)
     ].join("");
   }
 
   function applyStateToControls() {
+    applyMode();
     applyTheme();
     applyFormat();
 
@@ -437,6 +542,9 @@
 
     elements.currentBrandSelect.value = state.currentBrand;
     populateCurrentDeviceSelect();
+    elements.compareLeftBrandSelect.value = state.compareLeftBrand;
+    elements.compareRightBrandSelect.value = state.compareRightBrand;
+    populateCompareDeviceSelects();
 
     if (elements.formFactorSimpleSelect) {
       elements.formFactorSimpleSelect.value = state.formFactor;
@@ -461,6 +569,8 @@
     }
 
     elements.currentDeviceSelect.value = state.currentDeviceId;
+    elements.compareLeftDeviceSelect.value = state.compareLeftDeviceId;
+    elements.compareRightDeviceSelect.value = state.compareRightDeviceId;
     elements.sdCardSizeSelect.value = String(state.sdCardSizeGb);
     elements.futureProofRange.value = String(state.futureProofBias);
     elements.futureProofLabel.textContent = RULES.futureProofLabel(state.futureProofBias);
@@ -472,8 +582,18 @@
     elements.safetyBufferInput.value = String(state.advanced.safetyBufferPct);
 
     toggleCurrentDeviceField();
+    updateCurrentOwnershipNotice();
+    updateCompareSelectionNotice("left");
+    updateCompareSelectionNotice("right");
     toggleSdCardField();
     toggleAdvancedPanel();
+  }
+
+  function applyMode() {
+    document.body.setAttribute("data-mode", state.mode || "unselected");
+    elements.modeSelect.value = state.mode;
+    toggleModePanels();
+    syncSectionFolds();
   }
 
   function applyTheme() {
@@ -485,6 +605,33 @@
     document.body.setAttribute("data-format", state.format);
     elements.formatSelect.value = state.format;
     syncSectionFolds();
+  }
+
+  function toggleModePanels() {
+    const hasModeSelection = Boolean(state.mode);
+    const compareMode = state.mode === "compated";
+    elements.modeGatePanel.hidden = hasModeSelection;
+    elements.layoutTop.hidden = !hasModeSelection;
+    elements.resultsSection.hidden = !hasModeSelection;
+    elements.changelogSection.hidden = !hasModeSelection;
+    elements.quizForm.hidden = !hasModeSelection || compareMode;
+    elements.compareModePanel.hidden = !hasModeSelection || !compareMode;
+
+    if (elements.sidebar) {
+      elements.sidebar.hidden = !hasModeSelection || compareMode;
+    }
+
+    if (elements.layoutTop) {
+      elements.layoutTop.classList.toggle("layout-top-single", hasModeSelection && compareMode);
+    }
+
+    if (elements.resultsKicker) {
+      elements.resultsKicker.textContent = compareMode ? "Compare" : "Results";
+    }
+
+    if (elements.resultsTitle) {
+      elements.resultsTitle.textContent = compareMode ? "Device Compare" : "Scorecard";
+    }
   }
 
   function enhanceFormSections() {
@@ -576,23 +723,54 @@
       elements.currentDeviceSelect.value = "";
       elements.currentBrandDeviceField.hidden = true;
       elements.currentOwnershipNotice.hidden = true;
+      elements.currentOwnershipNotice.textContent = "";
       return;
     }
 
     if (!state.currentBrand) {
       elements.currentBrandDeviceField.hidden = true;
       elements.currentOwnershipNotice.hidden = true;
+      elements.currentOwnershipNotice.textContent = "";
       return;
     }
 
     const brandName = getBrandName(state.currentBrand);
     const deviceLabel = elements.currentBrandDeviceField.querySelector("label");
     elements.currentBrandDeviceField.hidden = false;
-    elements.currentOwnershipNotice.hidden = !state.currentDeviceId || deviceMap.has(state.currentDeviceId);
 
     if (deviceLabel) {
       deviceLabel.textContent = `Current ${brandName} device`;
     }
+  }
+
+  function updateCurrentOwnershipNotice() {
+    if (state.ownsDevice !== "yes" || !state.currentBrand || !state.currentDeviceId) {
+      elements.currentOwnershipNotice.hidden = true;
+      elements.currentOwnershipNotice.textContent = "";
+      return;
+    }
+
+    const currentDevice = getCurrentComparisonDevice();
+    const note = getPoolAccuracyNote(currentDevice);
+    elements.currentOwnershipNotice.hidden = !note;
+    elements.currentOwnershipNotice.textContent = note;
+  }
+
+  function updateCompareSelectionNotice(side) {
+    const noticeElement = side === "left" ? elements.compareLeftNotice : elements.compareRightNotice;
+    const brandId = side === "left" ? state.compareLeftBrand : state.compareRightBrand;
+    const deviceId = side === "left" ? state.compareLeftDeviceId : state.compareRightDeviceId;
+
+    if (!brandId || !deviceId) {
+      noticeElement.hidden = true;
+      noticeElement.textContent = "";
+      return;
+    }
+
+    const device = getResolvedDeviceSelection(brandId, deviceId);
+    const note = getPoolAccuracyNote(device);
+    noticeElement.hidden = !note;
+    noticeElement.textContent = note;
   }
 
   function toggleAdvancedPanel() {
@@ -717,7 +895,11 @@
   }
 
   function handleExport() {
-    if (!latestAnalysis || !latestAnalysis.hasActiveLibrary) {
+    const hasExportableContent = latestAnalysis
+      && ((latestAnalysis.mode === "compated" && latestAnalysis.ready)
+        || (latestAnalysis.mode !== "compated" && latestAnalysis.hasActiveLibrary));
+
+    if (!hasExportableContent) {
       setStatus("Nothing to export yet");
       return;
     }
@@ -1079,13 +1261,32 @@
   }
 
   function updateDerivedUi(scrollToResults) {
-    updatePreferencePoolNote();
-    latestAnalysis = analyzeState();
-    renderSnapshot(latestAnalysis);
-    renderResults(latestAnalysis);
+    if (!state.mode) {
+      latestAnalysis = null;
+      elements.snapshotCards.innerHTML = "";
+      elements.resultsContent.innerHTML = "";
+      persistState();
+      return;
+    }
+
+    if (state.mode === "compated") {
+      latestAnalysis = analyzeCompareMode();
+      elements.snapshotCards.innerHTML = "";
+      renderCompareResults(latestAnalysis);
+    } else {
+      updatePreferencePoolNote();
+      latestAnalysis = analyzeState();
+      renderSnapshot(latestAnalysis);
+      renderResults(latestAnalysis);
+    }
+
     persistState();
 
-    if (scrollToResults && latestAnalysis.hasActiveLibrary) {
+    const hasVisibleResults = state.mode === "compated"
+      ? latestAnalysis.ready
+      : latestAnalysis.hasActiveLibrary;
+
+    if (scrollToResults && hasVisibleResults) {
       elements.resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }
@@ -1164,6 +1365,7 @@
 
     if (laneSupport.blocked.length) {
       return {
+        mode: "recommendation",
         hasActiveLibrary: breakdown.length > 0,
         breakdown,
         fitModel,
@@ -1190,6 +1392,7 @@
     const sdSavingsPaths = findSdSavingsPaths(breakdown, storage, performance, scoring);
 
     return {
+      mode: "recommendation",
       hasActiveLibrary: breakdown.length > 0,
       breakdown,
       fitModel,
@@ -1204,6 +1407,217 @@
       headlineSystems: getHeadlineSystems(breakdown),
       keepCurrent: Boolean(currentComparison && currentComparison.shouldKeepCurrent)
     };
+  }
+
+  function analyzeCompareMode() {
+    const leftDevice = getResolvedCompareDevice("left");
+    const rightDevice = getResolvedCompareDevice("right");
+
+    if (!leftDevice || !rightDevice) {
+      return {
+        mode: "compated",
+        ready: false,
+        leftDevice,
+        rightDevice
+      };
+    }
+
+    const metrics = buildDirectCompareMetrics(leftDevice, rightDevice);
+    let leftPoints = 0;
+    let rightPoints = 0;
+
+    metrics.forEach((metric) => {
+      if (metric.winner === "left") {
+        leftPoints += metric.weight;
+      } else if (metric.winner === "right") {
+        rightPoints += metric.weight;
+      }
+    });
+
+    const winnerSide = leftPoints === rightPoints ? "tie" : leftPoints > rightPoints ? "left" : "right";
+    const winningDevice = winnerSide === "left" ? leftDevice : winnerSide === "right" ? rightDevice : null;
+    const differentLane = getComparisonClass(leftDevice) !== getComparisonClass(rightDevice);
+    const verdict = getDirectCompareVerdict(leftPoints, rightPoints, differentLane);
+
+    return {
+      mode: "compated",
+      ready: true,
+      leftDevice,
+      rightDevice,
+      winnerSide,
+      winningDevice,
+      differentLane,
+      verdict,
+      metrics,
+      headline: buildDirectCompareHeadline(winnerSide, winningDevice, leftDevice, rightDevice),
+      summary: buildDirectCompareSummary(winnerSide, leftDevice, rightDevice, differentLane),
+      notes: buildDirectCompareNotes(leftDevice, rightDevice, metrics, winnerSide, differentLane)
+    };
+  }
+
+  function getResolvedCompareDevice(side) {
+    if (side === "left") {
+      return getResolvedDeviceSelection(state.compareLeftBrand, state.compareLeftDeviceId);
+    }
+
+    return getResolvedDeviceSelection(state.compareRightBrand, state.compareRightDeviceId);
+  }
+
+  function buildDirectCompareMetrics(leftDevice, rightDevice) {
+    return [
+      {
+        label: "Power Tier",
+        leftValue: getComputeFloorLabel(leftDevice.computeRank),
+        rightValue: getComputeFloorLabel(rightDevice.computeRank),
+        winner: compareNumericLead(leftDevice.computeRank, rightDevice.computeRank),
+        weight: 4,
+        note: "Higher tier means more raw headroom."
+      },
+      {
+        label: "RAM",
+        leftValue: `${leftDevice.ram}GB`,
+        rightValue: `${rightDevice.ram}GB`,
+        winner: compareNumericLead(leftDevice.ram, rightDevice.ram),
+        weight: 2,
+        note: "More RAM helps multitasking and heavier Android loads."
+      },
+      {
+        label: "Storage",
+        leftValue: formatSize(leftDevice.storage),
+        rightValue: formatSize(rightDevice.storage),
+        winner: compareNumericLead(leftDevice.storage, rightDevice.storage),
+        weight: 1,
+        note: "Internal storage only."
+      },
+      {
+        label: "Form Factor",
+        leftValue: formatFormFactorLabel(leftDevice.formFactor),
+        rightValue: formatFormFactorLabel(rightDevice.formFactor),
+        winner: "tie",
+        weight: 0,
+        note: "Shape is preference driven, so this row does not pick a winner."
+      },
+      {
+        label: "Live Price",
+        leftValue: getComparisonPriceLabel(leftDevice),
+        rightValue: getComparisonPriceLabel(rightDevice),
+        winner: comparePriceLead(leftDevice, rightDevice),
+        weight: 1,
+        note: "Lower live price wins when both prices exist."
+      }
+    ];
+  }
+
+  function compareNumericLead(leftValue, rightValue) {
+    if (leftValue === rightValue) {
+      return "tie";
+    }
+
+    return leftValue > rightValue ? "left" : "right";
+  }
+
+  function comparePriceLead(leftDevice, rightDevice) {
+    const leftPrice = getValidPrice(leftDevice);
+    const rightPrice = getValidPrice(rightDevice);
+
+    if (leftPrice === null || rightPrice === null || leftPrice === rightPrice) {
+      return "tie";
+    }
+
+    return leftPrice < rightPrice ? "left" : "right";
+  }
+
+  function getDirectCompareVerdict(leftPoints, rightPoints, differentLane) {
+    const gap = Math.abs(leftPoints - rightPoints);
+
+    if (gap >= 5) {
+      return differentLane ? "Clear lead across different lanes" : "Clear lead";
+    }
+
+    if (gap >= 2) {
+      return differentLane ? "Modest lead across different lanes" : "Modest lead";
+    }
+
+    return differentLane ? "Close but different lanes" : "Close match";
+  }
+
+  function buildDirectCompareHeadline(winnerSide, winningDevice, leftDevice, rightDevice) {
+    if (winnerSide === "tie" || !winningDevice) {
+      return `${leftDevice.name} and ${rightDevice.name} are very close on paper.`;
+    }
+
+    return `${winningDevice.name} has the stronger overall spec profile.`;
+  }
+
+  function buildDirectCompareSummary(winnerSide, leftDevice, rightDevice, differentLane) {
+    const cheaperSide = comparePriceLead(leftDevice, rightDevice);
+    const cheaperDevice = cheaperSide === "left" ? leftDevice : cheaperSide === "right" ? rightDevice : null;
+
+    if (winnerSide === "tie") {
+      let tieSummary = "These two land very close on raw specs, so shape, software lane, and price matter more than the small paper gap.";
+      if (differentLane) {
+        tieSummary += " They also sit in different handheld lanes, so this is directional rather than one to one.";
+      }
+      return tieSummary;
+    }
+
+    const winningDevice = winnerSide === "left" ? leftDevice : rightDevice;
+    let summary = `${winningDevice.name} comes out ahead on compute tier, RAM, and storage overall.`;
+
+    if (cheaperDevice) {
+      if (cheaperDevice.id === winningDevice.id) {
+        summary += ` It also carries the lower live price right now.`;
+      } else {
+        summary += ` ${cheaperDevice.name} is the cheaper option if price matters more than raw headroom.`;
+      }
+    }
+
+    if (differentLane) {
+      summary += " These two sit in different handheld lanes, so treat the result as directional.";
+    }
+
+    return summary;
+  }
+
+  function buildDirectCompareNotes(leftDevice, rightDevice, metrics, winnerSide, differentLane) {
+    const notes = [];
+    const powerMetric = metrics.find((metric) => metric.label === "Power Tier");
+    const ramMetric = metrics.find((metric) => metric.label === "RAM");
+    const priceMetric = metrics.find((metric) => metric.label === "Live Price");
+
+    if (powerMetric && powerMetric.winner !== "tie") {
+      const powerLeader = powerMetric.winner === "left" ? leftDevice : rightDevice;
+      notes.push(`${powerLeader.name} has the higher power tier.`);
+    }
+
+    if (ramMetric && ramMetric.winner !== "tie") {
+      const ramLeader = ramMetric.winner === "left" ? leftDevice : rightDevice;
+      notes.push(`${ramLeader.name} carries more RAM for heavier multitasking.`);
+    }
+
+    if (priceMetric && priceMetric.winner !== "tie") {
+      const priceLeader = priceMetric.winner === "left" ? leftDevice : rightDevice;
+      notes.push(`${priceLeader.name} has the lower live price from the current pool.`);
+    }
+
+    if (differentLane) {
+      notes.push("These sit in different handheld lanes, so the result is directional rather than like for like.");
+    }
+
+    const leftAccuracyNote = getPoolAccuracyNote(leftDevice);
+    const rightAccuracyNote = getPoolAccuracyNote(rightDevice);
+    if (leftAccuracyNote) {
+      notes.push(leftAccuracyNote);
+    }
+    if (rightAccuracyNote) {
+      notes.push(rightAccuracyNote);
+    }
+
+    if (winnerSide === "tie") {
+      notes.push("This is close enough that form factor and software preference should break the tie.");
+    }
+
+    return dedupeStrings(notes).slice(0, 6);
   }
 
   function getActiveFitModel(breakdown) {
@@ -2197,6 +2611,161 @@
         <div class="simple-terminal-note">${escapeHtml(snapshotPriceCopy)}</div>
         ${analysis.ownershipNote ? `<div class="simple-terminal-note">${escapeHtml(analysis.ownershipNote)}</div>` : ""}
       </div>
+    `;
+  }
+
+  function renderCompareResults(analysis) {
+    if (!analysis.ready) {
+      const emptyMessage = "Pick a handheld on both sides to run a direct compare.";
+
+      if (state.format === "simple") {
+        elements.resultsContent.innerHTML = `
+          <div class="simple-terminal simple-terminal-full">
+            <div class="simple-terminal-head">File Explorer</div>
+            ${renderSimpleExplorerPath(["Where2Buy", "Compare", "Simple"])}
+            <div class="simple-terminal-command">Ready</div>
+            <div class="simple-terminal-note">${escapeHtml(emptyMessage)}</div>
+          </div>
+        `;
+        return;
+      }
+
+      elements.resultsContent.innerHTML = `
+        <div class="empty-state">
+          ${escapeHtml(emptyMessage)}
+        </div>
+      `;
+      return;
+    }
+
+    if (state.format === "simple") {
+      renderSimpleCompareResults(analysis);
+      return;
+    }
+
+    const winnerCopy = analysis.winnerSide === "tie"
+      ? "No clear winner"
+      : `${analysis.winningDevice.name} leads`;
+
+    elements.resultsContent.innerHTML = `
+      <div class="scorecard-story">
+        <section class="story-hero">
+          <div class="story-hero-grid">
+            <div class="story-hero-copy">
+              <p class="story-kicker">Direct Compare</p>
+              <h3 class="story-title">${escapeHtml(analysis.headline)}</h3>
+              <p class="story-lead">${escapeHtml(analysis.summary)}</p>
+            </div>
+            <div class="story-burst">
+              <span class="story-burst-label">Verdict</span>
+              <strong class="story-burst-value">${escapeHtml(winnerCopy)}</strong>
+              <span class="story-burst-copy">${escapeHtml(analysis.verdict)}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="story-panel story-tone-purple">
+          <div class="story-panel-heading">
+            <div>
+              <p class="story-step">Devices</p>
+              <h3>Head to head</h3>
+            </div>
+            <div class="story-chip-row">
+              <span class="story-chip">${escapeHtml(analysis.verdict)}</span>
+            </div>
+          </div>
+          <div class="story-choice-grid">
+            ${renderCompareDeviceCard("Left Device", analysis.leftDevice, analysis.winnerSide === "left")}
+            ${renderCompareDeviceCard("Right Device", analysis.rightDevice, analysis.winnerSide === "right")}
+          </div>
+        </section>
+
+        <section class="story-panel story-tone-blue">
+          <div class="story-panel-heading">
+            <div>
+              <p class="story-step">Metrics</p>
+              <h3>Paper specs</h3>
+            </div>
+          </div>
+          <div class="compare-metric-list">
+            ${analysis.metrics.map((metric) => renderCompareMetricRow(metric)).join("")}
+          </div>
+        </section>
+
+        <section class="story-panel story-tone-green">
+          <div class="story-panel-heading">
+            <div>
+              <p class="story-step">Notes</p>
+              <h3>What stands out</h3>
+            </div>
+          </div>
+          <div class="story-list">
+            ${analysis.notes.map((note) => `<div>${escapeHtml(note)}</div>`).join("")}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderSimpleCompareResults(analysis) {
+    elements.resultsContent.innerHTML = `
+      <div class="simple-terminal simple-terminal-full">
+        <div class="simple-terminal-head">File Explorer</div>
+        ${renderSimpleExplorerPath(["Where2Buy", "Compare", "Simple"])}
+        ${renderSimpleTerminalSection("Compare", [
+          ["Headline", analysis.headline],
+          ["Verdict", analysis.verdict],
+          ["Left Device", analysis.leftDevice.name],
+          ["Right Device", analysis.rightDevice.name]
+        ])}
+        ${renderSimpleTerminalSection("Paper Specs", analysis.metrics.map((metric) => {
+          return [metric.label, `${metric.leftValue} | ${metric.rightValue}`];
+        }))}
+        <section class="simple-terminal-section">
+          <h3 class="simple-terminal-title">Notes</h3>
+          ${renderSimpleTerminalNotes(analysis.notes)}
+        </section>
+      </div>
+    `;
+  }
+
+  function renderCompareDeviceCard(title, device, isLeading) {
+    const accuracyNote = getPoolAccuracyNote(device);
+    const accentClass = isLeading ? " story-choice-card-accent" : "";
+
+    return `
+      <article class="story-choice-card${accentClass}">
+        <span class="story-choice-label">${escapeHtml(title)}</span>
+        <h4>${escapeHtml(device.name)}</h4>
+        <div class="story-chip-row">
+          <span class="story-chip story-chip-accent">${escapeHtml(getBrandName(getDeviceBrandId(device)))}</span>
+          <span class="story-chip">${escapeHtml(getComparisonClassLabel(getComparisonClass(device)))}</span>
+          <span class="story-chip">${escapeHtml(formatFormFactorLabel(device.formFactor))}</span>
+          <span class="story-chip">${device.ram}GB RAM</span>
+          <span class="story-chip">${formatSize(device.storage)} storage</span>
+          <span class="story-chip">${escapeHtml(getComparisonPriceLabel(device))}</span>
+        </div>
+        ${accuracyNote ? `<p class="story-choice-copy">${escapeHtml(accuracyNote)}</p>` : `<p class="story-choice-copy">Live pool device with direct sheet data.</p>`}
+      </article>
+    `;
+  }
+
+  function renderCompareMetricRow(metric) {
+    const leftClass = metric.winner === "left" ? " is-leading" : "";
+    const rightClass = metric.winner === "right" ? " is-leading" : "";
+
+    return `
+      <article class="compare-metric-row">
+        <div class="compare-metric-head">
+          <span class="compare-metric-label">${escapeHtml(metric.label)}</span>
+          <span class="compare-metric-note">${escapeHtml(metric.note)}</span>
+        </div>
+        <div class="compare-metric-values">
+          <span class="compare-metric-value${leftClass}">${escapeHtml(metric.leftValue)}</span>
+          <span class="compare-metric-value compare-metric-value-center">vs</span>
+          <span class="compare-metric-value${rightClass}">${escapeHtml(metric.rightValue)}</span>
+        </div>
+      </article>
     `;
   }
 
@@ -3215,30 +3784,55 @@
     return "android-retro";
   }
 
-  function getCurrentComparisonDevice() {
-    if (state.ownsDevice !== "yes" || !state.currentBrand || !state.currentDeviceId) {
+  function getComparisonClassLabel(compareClass) {
+    const labels = {
+      "android-retro": "Android Retro",
+      "windows-handheld": "Windows Handheld",
+      "linux-retro": "Linux Retro",
+      "cloud-streaming": "Cloud Streaming"
+    };
+
+    return labels[compareClass] || "Mixed";
+  }
+
+  function getComparisonPriceLabel(device) {
+    const price = getValidPrice(device);
+    if (price !== null) {
+      return usdFormatter.format(price);
+    }
+
+    return device && device.inLivePool ? "Price unavailable" : "No live price";
+  }
+
+  function getResolvedDeviceSelection(brandId, deviceId) {
+    if (!brandId || !deviceId) {
       return null;
     }
 
-    if (deviceMap.has(state.currentDeviceId)) {
-      const currentDevice = deviceMap.get(state.currentDeviceId);
+    const ownedDevice = getOwnedDeviceById(brandId, deviceId);
+    if (!ownedDevice) {
+      return null;
+    }
+
+    if (deviceMap.has(deviceId)) {
+      const currentDevice = deviceMap.get(deviceId);
       return {
         ...currentDevice,
         compareClass: getComparisonClass(currentDevice),
-        estimatedProfile: false
+        estimatedProfile: false,
+        inLivePool: recommendableDeviceIds.has(deviceId)
       };
     }
 
-    const ownedDevice = getOwnedDeviceById(state.currentBrand, state.currentDeviceId);
-    const comparisonProfile = getOwnedDeviceCompareProfile(state.currentBrand, state.currentDeviceId);
+    const comparisonProfile = getOwnedDeviceCompareProfile(brandId, deviceId);
 
-    if (!ownedDevice || !comparisonProfile) {
+    if (!comparisonProfile) {
       return null;
     }
 
     return {
       id: ownedDevice.id,
-      brand: state.currentBrand,
+      brand: brandId,
       name: ownedDevice.name,
       family: ownedDevice.name,
       ram: comparisonProfile.ram,
@@ -3248,9 +3842,30 @@
       dualScreen: Boolean(comparisonProfile.dualScreen),
       compareClass: comparisonProfile.compareClass || "android-retro",
       estimatedProfile: true,
+      inLivePool: false,
       available: false,
       recommendable: false
     };
+  }
+
+  function getPoolAccuracyNote(device) {
+    if (!device || device.inLivePool) {
+      return "";
+    }
+
+    if (device.estimatedProfile) {
+      return `${device.name} is not in the live pool. This compare uses a family level estimate and data could be incorrect.`;
+    }
+
+    return `${device.name} is not in the live pool. Current data could be incorrect.`;
+  }
+
+  function getCurrentComparisonDevice() {
+    if (state.ownsDevice !== "yes") {
+      return null;
+    }
+
+    return getResolvedDeviceSelection(state.currentBrand, state.currentDeviceId);
   }
 
   function getBrandName(brandId) {
@@ -3284,6 +3899,10 @@
         ? " This is a cross-lane estimate, so treat it as directional."
         : "";
       return `Current handheld matched by family estimate: ${getOwnedDeviceLabel()}. This uses broad specs for comparison, not a full exact device sheet.${laneNote}`;
+    }
+
+    if (!currentDevice.inLivePool) {
+      return `Current handheld noted: ${getOwnedDeviceLabel()}. It is outside the live pool, so current data could be incorrect.`;
     }
 
     return "";
@@ -3647,9 +4266,14 @@
     return {
       theme: state.theme,
       format: state.format,
+      mode: state.mode,
       ownsDevice: state.ownsDevice,
       currentBrand: state.currentBrand,
       currentDeviceId: state.currentDeviceId,
+      compareLeftBrand: state.compareLeftBrand,
+      compareLeftDeviceId: state.compareLeftDeviceId,
+      compareRightBrand: state.compareRightBrand,
+      compareRightDeviceId: state.compareRightDeviceId,
       useCaseLane: state.useCaseLane,
       brandPreference: state.brandPreference,
       formFactor: state.formFactor,
@@ -3707,6 +4331,32 @@ Total = ${scoreBreakdown.total}/100`;
   }
 
   function buildExportText(analysis) {
+    if (analysis.mode === "compated") {
+      const lines = [
+        "Which Handheld Should I Buy?",
+        "",
+        "Compated",
+        `Headline: ${analysis.headline}`,
+        `Verdict: ${analysis.verdict}`,
+        `Left Device: ${analysis.leftDevice.name}`,
+        `Right Device: ${analysis.rightDevice.name}`,
+        ""
+      ];
+
+      lines.push("Paper Specs");
+      analysis.metrics.forEach((metric) => {
+        lines.push(`- ${metric.label}: ${metric.leftValue} vs ${metric.rightValue}`);
+      });
+
+      if (analysis.notes.length) {
+        lines.push("");
+        lines.push("Notes");
+        analysis.notes.forEach((note) => lines.push(`- ${note}`));
+      }
+
+      return lines.join("\n");
+    }
+
     const lines = [];
     if (!analysis.scoring.recommended) {
       lines.push("Which Handheld Should I Buy?");

@@ -66,6 +66,11 @@
     { id: "simple", name: "Simple" }
   ];
 
+  const workflowModes = [
+    { id: "recommendation", name: "Recommendation" },
+    { id: "compated", name: "Compated" }
+  ];
+
   const useCaseLanes = [
     { id: "any", name: "Any current lane" },
     { id: "retro-focused", name: "Low End Retro" },
@@ -411,9 +416,14 @@
   const appDefaults = {
     theme: "canyon-dust",
     format: "default",
+    mode: "",
     ownsDevice: "no",
     currentBrand: "",
     currentDeviceId: "",
+    compareLeftBrand: "",
+    compareLeftDeviceId: "",
+    compareRightBrand: "",
+    compareRightDeviceId: "",
     useCaseLane: "any",
     brandPreference: "any",
     formFactor: "no-preference",
@@ -530,6 +540,7 @@
     themeGroups,
     themes,
     formats,
+    workflowModes,
     useCaseLanes,
     useCaseLaneProfiles,
     brands,
