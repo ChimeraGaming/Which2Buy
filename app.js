@@ -4335,7 +4335,7 @@ Total = ${scoreBreakdown.total}/100`;
       const lines = [
         "Which Handheld Should I Buy?",
         "",
-        "Compated",
+        "Compare Devices",
         `Headline: ${analysis.headline}`,
         `Verdict: ${analysis.verdict}`,
         `Left Device: ${analysis.leftDevice.name}`,

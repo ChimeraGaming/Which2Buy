@@ -68,7 +68,7 @@
 
   const workflowModes = [
     { id: "recommendation", name: "Recommendation" },
-    { id: "compated", name: "Compated" }
+    { id: "compated", name: "Compare Devices" }
   ];
 
   const useCaseLanes = [
