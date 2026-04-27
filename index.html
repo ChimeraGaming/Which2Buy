@@ -20,7 +20,7 @@
   <meta name="twitter:description" content="A GitHub Pages tool that recommends the best current handheld fit based on your systems, storage needs, performance tier, form factor, and upgrade value.">
   <meta name="twitter:image" content="https://chimeragaming.github.io/Which2Buy/Which2Buy.png">
   <meta name="twitter:image:alt" content="Which Handheld Should I Buy preview image">
-  <link rel="stylesheet" href="styles.css?v=5.6.1">
+  <link rel="stylesheet" href="styles.css?v=6.5.2">
 </head>
 <body data-theme="canyon-dust" data-format="default">
   <div class="theme-atmosphere" aria-hidden="true"></div>
@@ -182,13 +182,13 @@
         <p class="eyebrow">Config driven handheld picker</p>
         <div class="hero-title-row">
           <h1>Which Handheld Should I Buy?</h1>
-        <span class="version-badge">v.5.6.1</span>
+        <span class="version-badge">v.6.5.2</span>
         </div>
         <p class="subtitle">
           Transparent recommendations across current official AYN, Retroid, ANBERNIC, AYANEO, Powkiddy, and Miyoo handhelds.
           Recommendation mode builds a live fit for your library. Compare Devices mode checks two handhelds directly.
         </p>
-        <p class="last-updated">Last updated: 4/20/2026</p>
+        <p class="last-updated">Last updated: 4/27/2026</p>
       </div>
       <div class="hero-actions">
         <div class="picker-stack">
@@ -223,6 +223,7 @@
           target="_blank"
           rel="noreferrer"
         >Report Issue</a>
+        <a class="secondary-button" href="#roadmapSection">Roadmap</a>
         <button id="shareButton" class="secondary-button" type="button">Copy Share Link</button>
         <button id="exportButton" class="secondary-button" type="button">Export Results</button>
       </div>
@@ -262,7 +263,7 @@
                 </div>
                 <p class="hint-text" id="currentOwnershipNotice" hidden>
                   This current device is stored for ownership context.
-                  Non live models use family level estimates for cross brand comparison.
+                  Collected devices in the live pool use their stored profile or sheet data for cross brand comparison.
                 </p>
               </div>
             </section>
@@ -300,6 +301,68 @@
             <section class="section-block">
               <div class="section-heading">
                 <p class="section-kicker">Step 2</p>
+                <h2>Accuracy Inputs</h2>
+              </div>
+              <div class="accuracy-grid">
+                <div class="field">
+                  <label for="sessionStyleSelect">Session Style</label>
+                  <select id="sessionStyleSelect">
+                    <option value="mixed">Mixed sessions</option>
+                    <option value="short">Mostly short sessions</option>
+                    <option value="long">Mostly long sessions</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="portabilityPrioritySelect">Portability</label>
+                  <select id="portabilityPrioritySelect">
+                    <option value="balanced">Balanced</option>
+                    <option value="carry">Easy to carry</option>
+                    <option value="pocket">Pocket first</option>
+                    <option value="desk">Size does not matter much</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="screenPrioritySelect">Screen Priority</label>
+                  <select id="screenPrioritySelect">
+                    <option value="balanced">Balanced</option>
+                    <option value="big">Larger screen</option>
+                    <option value="retro">Retro friendly screen</option>
+                    <option value="dual">Dual screen leaning</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="controlPrioritySelect">Controls</label>
+                  <select id="controlPrioritySelect">
+                    <option value="balanced">Balanced</option>
+                    <option value="sticks">Stick focused</option>
+                    <option value="dpad">D-pad focused</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="softwarePreferenceSelect">Software</label>
+                  <select id="softwarePreferenceSelect">
+                    <option value="balanced">Balanced</option>
+                    <option value="stable">Stable and easy</option>
+                    <option value="tinker">I can tinker</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="touchPreferenceSelect">Touchscreen</label>
+                  <select id="touchPreferenceSelect">
+                    <option value="no-preference">No preference</option>
+                    <option value="required">Required</option>
+                    <option value="avoid">Prefer to avoid it</option>
+                  </select>
+                </div>
+              </div>
+              <p class="hint-text">
+                These inputs push the result beyond raw RAM and storage so the tool can weigh screen fit, controls, portability, software maturity, and long session comfort.
+              </p>
+            </section>
+
+            <section class="section-block">
+              <div class="section-heading">
+                <p class="section-kicker">Step 3</p>
                 <h2>Systems</h2>
               </div>
               <div id="systemSelector" class="system-selector" aria-live="polite"></div>
@@ -313,7 +376,7 @@
 
             <section class="section-block">
               <div class="section-heading">
-                <p class="section-kicker">Step 3</p>
+                <p class="section-kicker">Step 4</p>
                 <h2>Library Details</h2>
               </div>
               <div id="systemCards" class="system-cards"></div>
@@ -412,7 +475,7 @@
               <h2>Direct device check</h2>
             </div>
             <p class="hint-text">
-              Pick two handhelds to compare them directly. Devices outside the live pool still show up, but those results can drift because they use older listings or family level estimates.
+              Pick two handhelds to compare them directly. Every collected device now sits in the live pool, and the compare only warns if something falls back to an estimate.
             </p>
             <div class="compare-mode-grid">
               <section class="compare-device-panel">
@@ -488,6 +551,74 @@
             <details class="changelog-group changelog-root" open>
               <summary>Changelog</summary>
               <div class="changelog-group-body">
+                <details class="changelog-group" open>
+                  <summary>Update 6 - Accuracy Improvements</summary>
+                  <div class="changelog-group-body">
+                    <details class="changelog-group" open>
+                      <summary>6.5.2 - 3DS Form Factor Weight</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Compare Devices now gives real weight to clamshell and dual screen form factor when DS or 3DS is part of your selected library.</p>
+                        <p>The Form Factor row can now pick a winner when your selected systems actually depend on that shape, instead of always forcing a tie.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>6.5.1 - Thor Max 512GB Variant</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Added the live Thor Max 512GB listing beside the Thor Max 1TB listing, using the current public Batch 6 store data.</p>
+                        <p>The Thor Max 1TB entry is now labeled more clearly, and both Max variants keep the same Thor hardware sheet with their correct storage and price split.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>6.5 - Handheld PC Compare Catalog</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Added Steam Deck LCD and OLED models, ASUS ROG Ally models, and MSI Claw models to Compare Devices so more handheld PC hardware can be matched head to head.</p>
+                        <p>These compare entries now carry stored public screen, battery, control, cooling, OS, and chipset data where current official pages expose it.</p>
+                        <p>Battery labels now support public Wh specs, which keeps bigger handheld PC entries more accurate without forcing made up mAh values.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>6.4 - Public Hardware Sheet Pass</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Filled the remaining live device gaps with public screen, battery, weight, cooling, control, and software fields from current product pages where that data is available.</p>
+                        <p>ANBERNIC, AYANEO, Powkiddy, and Miyoo live entries now lean on stored hardware sheets instead of broad fallback profiles in more of the recommendation and compare flow.</p>
+                        <p>No live device is still sitting at zero hardware coverage after this pass, so confidence and experience scoring have a better base to work from.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>6.3 - System Compatibility Pass</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Recommendation scoring now checks per system screen fit, controls, touch needs, portability, and software overhead instead of treating raw tier as the whole story.</p>
+                        <p>Compare Devices now adds a Selected Library row when systems are picked, so the compare can reflect your actual library instead of only paper specs.</p>
+                        <p>Why This Fits and confidence notes now call out when certain systems line up especially well or less cleanly on the recommended handheld.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>6.2 - Hardware Data Pass</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Screen, controls, portability, battery, and software fit now read from stored hardware fields first instead of leaning mostly on profile guesses.</p>
+                        <p>Current handheld entries now show more exact screen and software labels like aspect ratio, panel type, Android version, and OTA support when that data exists.</p>
+                        <p>Confidence scoring now gives more weight to refreshed official hardware data and pulls back when a device still has thin detail.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>6.1 - Collected Device Catalog</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Added the full collected device catalog and moved every collected device into the live pool for compare and ownership checks.</p>
+                        <p>Current official prices and feature notes were refreshed for active AYANEO, Powkiddy, Logitech G, and Retroid listings where live store data still exists.</p>
+                        <p>Trait mapping now lands more honestly across Windows, Linux retro, cloud streaming, vertical, clamshell, and square handheld shapes.</p>
+                      </div>
+                    </details>
+                    <details class="changelog-group" open>
+                      <summary>6.0 - Accuracy Improvements</summary>
+                      <div class="changelog-group-body changelog-body">
+                        <p>Added new accuracy inputs for session style, portability, screen priority, controls, software preference, and touchscreen preference.</p>
+                        <p>Recommendation scoring now checks screen fit, control fit, portability, long session comfort, software maturity, and confidence instead of leaning mostly on RAM, storage, and price.</p>
+                        <p>Compare Devices now includes accuracy rows for screen, controls, portability, battery fit, and software fit.</p>
+                      </div>
+                    </details>
+                  </div>
+                </details>
+
                 <details class="changelog-group">
                   <summary>Update 5 - Brands Pt. 2</summary>
                   <div class="changelog-group-body">
@@ -496,7 +627,7 @@
                       <div class="changelog-group-body changelog-body">
                         <p>Added mode select so Recommendation and Compare Devices are split into their own flows.</p>
                         <p>The app now asks you to pick a mode before the other sections appear.</p>
-                        <p>Compare Devices can still show devices outside the live pool, but it now warns that the data could be incorrect.</p>
+                        <p>Compare Devices warns when a device has to fall back to an estimate.</p>
                       </div>
                     </details>
                     <details class="changelog-group" open>
@@ -975,12 +1106,44 @@
           </div>
         </div>
       </section>
+
+      <section class="panel changelog-page-panel" id="roadmapSection">
+        <div class="results-frame">
+          <div class="section-heading compact-heading">
+            <p class="section-kicker">Next</p>
+            <h2>Future Roadmap</h2>
+            <p class="subtitle">Roadmap updated for v.6.5.2 on 4/27/2026.</p>
+          </div>
+          <div class="roadmap-grid">
+            <article class="roadmap-card">
+              <span class="roadmap-label">Data Depth</span>
+              <h3>Expand official handheld PC coverage</h3>
+              <p>Add more public compare sheets for Legion Go, Legion Go S, and other major handheld PC models so the compare catalog stays broad without leaning on thin fallback entries.</p>
+            </article>
+            <article class="roadmap-card">
+              <span class="roadmap-label">Testing</span>
+              <h3>Battery and sustained load pass</h3>
+              <p>Add real long session battery, thermal drop, and charging behavior notes so big recommendations stop looking equal when they are not.</p>
+            </article>
+            <article class="roadmap-card">
+              <span class="roadmap-label">Software</span>
+              <h3>OS and frontend maturity table</h3>
+              <p>Track update cadence, sleep behavior, launcher quality, Android version, and community firmware support by family.</p>
+            </article>
+            <article class="roadmap-card">
+              <span class="roadmap-label">Playability</span>
+              <h3>Exact per device playability grades</h3>
+              <p>Push the system pass further with device specific grades so the app can separate broad chip strength from real 3DS, Switch, Wii, PS2, and dual screen fit.</p>
+            </article>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
-  <script src="systems.js?v=5.6.1" defer></script>
-  <script src="devices.js?v=5.6.1" defer></script>
-  <script src="rules.js?v=5.6.1" defer></script>
-  <script src="app.js?v=5.6.1" defer></script>
+  <script src="systems.js?v=6.5.2" defer></script>
+  <script src="devices.js?v=6.5.2" defer></script>
+  <script src="rules.js?v=6.5.2" defer></script>
+  <script src="app.js?v=6.5.2" defer></script>
 </body>
 </html>

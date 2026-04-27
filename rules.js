@@ -127,17 +127,20 @@
   const brands = [
     { id: "anbernic", name: "ANBERNIC" },
     { id: "ayaneo", name: "AYANEO" },
+    { id: "asus", name: "ASUS ROG" },
     { id: "ayn", name: "AYN" },
     { id: "gameforce", name: "GameForce" },
     { id: "gpd", name: "GPD" },
     { id: "kinhank", name: "Kinhank" },
     { id: "logitech-g", name: "Logitech G" },
     { id: "miyoo", name: "Miyoo" },
+    { id: "msi", name: "MSI" },
     { id: "moqi", name: "Moqi" },
     { id: "onexplayer", name: "ONEXPLAYER" },
     { id: "powkiddy", name: "Powkiddy" },
     { id: "razer", name: "Razer" },
     { id: "retroid", name: "Retroid" },
+    { id: "valve", name: "Valve" },
     { id: "zpg", name: "ZPG" }
   ];
 
@@ -209,6 +212,12 @@
       { id: "ayaneo-kun", name: "Kun" },
       { id: "ayaneo-other", name: "Other AYANEO device" }
     ],
+    asus: [
+      { id: "rog-ally-z1", name: "ROG Ally Z1 512GB" },
+      { id: "rog-ally-z1-extreme", name: "ROG Ally Z1 Extreme 512GB" },
+      { id: "rog-ally-x", name: "ROG Ally X 1TB" },
+      { id: "asus-other", name: "Other ASUS ROG handheld" }
+    ],
     gameforce: [
       { id: "gameforce-chi", name: "Chi" },
       { id: "gameforce-ace", name: "ACE" },
@@ -251,6 +260,11 @@
       { id: "miyoo-a30", name: "A30" },
       { id: "miyoo-flip", name: "Flip" },
       { id: "miyoo-other", name: "Other Miyoo device" }
+    ],
+    msi: [
+      { id: "msi-claw-7-ai-plus", name: "Claw 7 AI+ 512GB" },
+      { id: "msi-claw-8-ai-plus", name: "Claw 8 AI+ 1TB" },
+      { id: "msi-other", name: "Other MSI handheld" }
     ],
     moqi: [
       { id: "moqi-i7", name: "i7" },
@@ -314,6 +328,12 @@
       { id: "retroid-pocket-6", name: "Pocket 6 (pre-order)" },
       { id: "retroid-other", name: "Other Retroid device" }
     ],
+    valve: [
+      { id: "steamdeck-lcd-256", name: "Steam Deck LCD 256GB" },
+      { id: "steamdeck-oled-512", name: "Steam Deck OLED 512GB" },
+      { id: "steamdeck-oled-1tb", name: "Steam Deck OLED 1TB" },
+      { id: "valve-other", name: "Other Valve handheld" }
+    ],
     zpg: [
       { id: "zpg-a1-unicorn", name: "A1 Unicorn" },
       { id: "zpg-pro", name: "ZPG Pro" },
@@ -344,6 +364,14 @@
         { ids: ["ayaneo-flip-kb", "ayaneo-flip-1s-kb"], compareClass: "windows-handheld", computeRank: 4, ram: 16, storage: 512, formFactor: "clamshell", dualScreen: false },
         { ids: ["ayaneo-air", "ayaneo-air-plus", "ayaneo-air-1s"], compareClass: "windows-handheld", computeRank: 3, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false },
         { ids: ["ayaneo-3", "ayaneo-2", "ayaneo-2s", "ayaneo-geek", "ayaneo-geek-1s", "ayaneo-next", "ayaneo-next-pro", "ayaneo-next-2", "ayaneo-slide", "ayaneo-kun"], compareClass: "windows-handheld", computeRank: 4, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false }
+      ]
+    },
+    asus: {
+      fallback: { compareClass: "windows-handheld", computeRank: 4, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false },
+      profiles: [
+        { ids: ["rog-ally-z1"], compareClass: "windows-handheld", computeRank: 3, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false },
+        { ids: ["rog-ally-z1-extreme"], compareClass: "windows-handheld", computeRank: 4, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false },
+        { ids: ["rog-ally-x"], compareClass: "windows-handheld", computeRank: 4, ram: 24, storage: 1024, formFactor: "horizontal", dualScreen: false }
       ]
     },
     gameforce: {
@@ -377,6 +405,13 @@
         { ids: ["miyoo-flip"], compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "clamshell", dualScreen: false }
       ]
     },
+    msi: {
+      fallback: { compareClass: "windows-handheld", computeRank: 4, ram: 32, storage: 512, formFactor: "horizontal", dualScreen: false },
+      profiles: [
+        { ids: ["msi-claw-7-ai-plus"], compareClass: "windows-handheld", computeRank: 4, ram: 32, storage: 512, formFactor: "horizontal", dualScreen: false },
+        { ids: ["msi-claw-8-ai-plus"], compareClass: "windows-handheld", computeRank: 4, ram: 32, storage: 1024, formFactor: "horizontal", dualScreen: false }
+      ]
+    },
     moqi: {
       fallback: { compareClass: "android-retro", computeRank: 1, ram: 4, storage: 64, formFactor: "horizontal", dualScreen: false },
       profiles: []
@@ -407,6 +442,14 @@
         { ids: ["retroid-pocket-classic"], compareClass: "android-retro", computeRank: 1, ram: 6, storage: 128, formFactor: "vertical", dualScreen: false }
       ]
     },
+    valve: {
+      fallback: { compareClass: "windows-handheld", computeRank: 3, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false },
+      profiles: [
+        { ids: ["steamdeck-lcd-256"], compareClass: "windows-handheld", computeRank: 3, ram: 16, storage: 256, formFactor: "horizontal", dualScreen: false },
+        { ids: ["steamdeck-oled-512"], compareClass: "windows-handheld", computeRank: 3, ram: 16, storage: 512, formFactor: "horizontal", dualScreen: false },
+        { ids: ["steamdeck-oled-1tb"], compareClass: "windows-handheld", computeRank: 3, ram: 16, storage: 1024, formFactor: "horizontal", dualScreen: false }
+      ]
+    },
     zpg: {
       fallback: { compareClass: "linux-retro", computeRank: 1, ram: 2, storage: 64, formFactor: "horizontal", dualScreen: false },
       profiles: []
@@ -427,6 +470,12 @@
     useCaseLane: "any",
     brandPreference: "any",
     formFactor: "no-preference",
+    sessionStyle: "mixed",
+    portabilityPriority: "balanced",
+    screenPriority: "balanced",
+    controlPriority: "balanced",
+    softwarePreference: "balanced",
+    touchPreference: "no-preference",
     useSdCard: "no",
     sdCardSizeGb: 512,
     futureProofBias: 50,

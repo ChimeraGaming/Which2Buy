@@ -1,23 +1,1545 @@
 (function () {
-  const APP_VERSION = "v.5.6.1";
+  const APP_VERSION = "v.6.5.2";
   const LOCAL_STORAGE_KEY = "which2buy-state-v1";
   const FIT_SCORE_WEIGHTS = {
-    performance: 35,
-    ram: 25,
-    storage: 20,
+    performance: 30,
+    ram: 20,
+    storage: 18,
     value: 10,
-    preference: 10
+    preference: 8,
+    experience: 14
+  };
+  const EXPERIENCE_SCORE_WEIGHTS = {
+    screen: 3.5,
+    controls: 3,
+    portability: 2.5,
+    battery: 2,
+    software: 2,
+    touch: 1
   };
   const FIT_SCORE_INFO = buildFitScoreInfo();
   const SYSTEMS = window.SystemsData || [];
-  const DEVICES = window.DevicesData || [];
   const RULES = window.Rules;
+  const ownedDevicesByBrand = RULES.ownedDevicesByBrand || {};
+  const ownedDeviceCompareProfiles = RULES.ownedDeviceCompareProfiles || {};
+  const SYSTEM_ACCURACY_PROFILES = {
+    default: { screenBig: 0.45, screenRetro: 0.45, dualScreen: 0, sticks: 0.5, dpad: 0.5, portability: 0.55, battery: 0.45, software: 0.35, touch: 0, confidenceRisk: 0.15 },
+    nes: { screenBig: 0.18, screenRetro: 0.9, dualScreen: 0, sticks: 0.15, dpad: 0.95, portability: 0.85, battery: 0.7, software: 0.12, touch: 0, confidenceRisk: 0.08 },
+    snes: { screenBig: 0.2, screenRetro: 0.92, dualScreen: 0, sticks: 0.2, dpad: 0.95, portability: 0.82, battery: 0.7, software: 0.12, touch: 0, confidenceRisk: 0.08 },
+    "n64": { screenBig: 0.34, screenRetro: 0.68, dualScreen: 0, sticks: 0.65, dpad: 0.45, portability: 0.68, battery: 0.55, software: 0.2, touch: 0, confidenceRisk: 0.14 },
+    "gb-gbc-gba": { screenBig: 0.18, screenRetro: 1, dualScreen: 0, sticks: 0.1, dpad: 0.96, portability: 0.9, battery: 0.72, software: 0.12, touch: 0, confidenceRisk: 0.08 },
+    ds: { screenBig: 0.46, screenRetro: 0.58, dualScreen: 1, sticks: 0.22, dpad: 0.78, portability: 0.64, battery: 0.5, software: 0.42, touch: 0.72, confidenceRisk: 0.2 },
+    "3ds": { screenBig: 0.56, screenRetro: 0.54, dualScreen: 0.86, sticks: 0.45, dpad: 0.62, portability: 0.56, battery: 0.52, software: 0.72, touch: 0.62, confidenceRisk: 0.42 },
+    gamecube: { screenBig: 0.62, screenRetro: 0.34, dualScreen: 0, sticks: 0.88, dpad: 0.35, portability: 0.46, battery: 0.58, software: 0.45, touch: 0, confidenceRisk: 0.24 },
+    wii: { screenBig: 0.64, screenRetro: 0.28, dualScreen: 0, sticks: 0.82, dpad: 0.34, portability: 0.42, battery: 0.56, software: 0.5, touch: 0, confidenceRisk: 0.28 },
+    "wii-u": { screenBig: 0.76, screenRetro: 0.18, dualScreen: 0.18, sticks: 0.86, dpad: 0.28, portability: 0.26, battery: 0.58, software: 0.92, touch: 0.2, confidenceRisk: 0.88 },
+    switch: { screenBig: 0.72, screenRetro: 0.22, dualScreen: 0, sticks: 0.86, dpad: 0.3, portability: 0.36, battery: 0.62, software: 0.88, touch: 0.12, confidenceRisk: 0.82 },
+    xbox: { screenBig: 0.78, screenRetro: 0.1, dualScreen: 0, sticks: 0.94, dpad: 0.22, portability: 0.22, battery: 0.62, software: 0.96, touch: 0, confidenceRisk: 0.95 },
+    ps1: { screenBig: 0.34, screenRetro: 0.84, dualScreen: 0, sticks: 0.32, dpad: 0.76, portability: 0.76, battery: 0.62, software: 0.18, touch: 0, confidenceRisk: 0.1 },
+    ps2: { screenBig: 0.64, screenRetro: 0.3, dualScreen: 0, sticks: 0.88, dpad: 0.32, portability: 0.42, battery: 0.56, software: 0.52, touch: 0, confidenceRisk: 0.3 },
+    ps3: { screenBig: 0.82, screenRetro: 0.08, dualScreen: 0, sticks: 0.96, dpad: 0.22, portability: 0.18, battery: 0.6, software: 1, touch: 0, confidenceRisk: 1 },
+    psp: { screenBig: 0.58, screenRetro: 0.38, dualScreen: 0, sticks: 0.46, dpad: 0.62, portability: 0.72, battery: 0.56, software: 0.24, touch: 0, confidenceRisk: 0.18 },
+    vita: { screenBig: 0.56, screenRetro: 0.34, dualScreen: 0, sticks: 0.76, dpad: 0.5, portability: 0.58, battery: 0.52, software: 0.68, touch: 0.22, confidenceRisk: 0.38 },
+    dreamcast: { screenBig: 0.48, screenRetro: 0.52, dualScreen: 0, sticks: 0.7, dpad: 0.5, portability: 0.58, battery: 0.52, software: 0.3, touch: 0, confidenceRisk: 0.24 },
+    saturn: { screenBig: 0.46, screenRetro: 0.62, dualScreen: 0, sticks: 0.42, dpad: 0.68, portability: 0.58, battery: 0.52, software: 0.42, touch: 0, confidenceRisk: 0.34 },
+    "sega-cd": { screenBig: 0.28, screenRetro: 0.84, dualScreen: 0, sticks: 0.18, dpad: 0.92, portability: 0.76, battery: 0.62, software: 0.14, touch: 0, confidenceRisk: 0.12 },
+    genesis: { screenBig: 0.18, screenRetro: 0.95, dualScreen: 0, sticks: 0.12, dpad: 0.96, portability: 0.84, battery: 0.7, software: 0.12, touch: 0, confidenceRisk: 0.08 },
+    arcade: { screenBig: 0.44, screenRetro: 0.6, dualScreen: 0, sticks: 0.52, dpad: 0.68, portability: 0.6, battery: 0.5, software: 0.3, touch: 0, confidenceRisk: 0.28 },
+    android: { screenBig: 0.62, screenRetro: 0.24, dualScreen: 0, sticks: 0.74, dpad: 0.42, portability: 0.44, battery: 0.58, software: 0.62, touch: 0.18, confidenceRisk: 0.26 },
+    pc: { screenBig: 0.74, screenRetro: 0.12, dualScreen: 0, sticks: 0.9, dpad: 0.2, portability: 0.24, battery: 0.66, software: 0.82, touch: 0.08, confidenceRisk: 0.38 }
+  };
+  const SYSTEM_COMPATIBILITY_PROFILES = {
+    default: { screenTarget: "balanced", controlTarget: "balanced", touchNeed: "none", softwareNeed: 0.35, portabilityTarget: 0.55, analogNeed: false },
+    nes: { screenTarget: "retro", controlTarget: "dpad", touchNeed: "none", softwareNeed: 0.12, portabilityTarget: 0.84, analogNeed: false },
+    snes: { screenTarget: "retro", controlTarget: "dpad", touchNeed: "none", softwareNeed: 0.12, portabilityTarget: 0.82, analogNeed: false },
+    "gb-gbc-gba": { screenTarget: "retro", controlTarget: "dpad", touchNeed: "none", softwareNeed: 0.12, portabilityTarget: 0.88, analogNeed: false },
+    genesis: { screenTarget: "retro", controlTarget: "dpad", touchNeed: "none", softwareNeed: 0.12, portabilityTarget: 0.84, analogNeed: false },
+    "sega-cd": { screenTarget: "retro", controlTarget: "dpad", touchNeed: "none", softwareNeed: 0.14, portabilityTarget: 0.76, analogNeed: false },
+    ps1: { screenTarget: "retro", controlTarget: "dpad-balanced", touchNeed: "none", softwareNeed: 0.18, portabilityTarget: 0.74, analogNeed: false },
+    n64: { screenTarget: "retro-balanced", controlTarget: "balanced", touchNeed: "none", softwareNeed: 0.2, portabilityTarget: 0.66, analogNeed: true },
+    dreamcast: { screenTarget: "retro-balanced", controlTarget: "balanced", touchNeed: "none", softwareNeed: 0.3, portabilityTarget: 0.58, analogNeed: true },
+    saturn: { screenTarget: "retro-balanced", controlTarget: "dpad-balanced", touchNeed: "none", softwareNeed: 0.42, portabilityTarget: 0.58, analogNeed: false },
+    arcade: { screenTarget: "retro-balanced", controlTarget: "balanced", touchNeed: "none", softwareNeed: 0.3, portabilityTarget: 0.6, analogNeed: false },
+    ds: { screenTarget: "dual", controlTarget: "dpad", touchNeed: "required", softwareNeed: 0.28, portabilityTarget: 0.64, analogNeed: false, formFactorNeed: "clamshell-prefer" },
+    "3ds": { screenTarget: "dual-large", controlTarget: "balanced", touchNeed: "required", softwareNeed: 0.72, portabilityTarget: 0.56, analogNeed: true, formFactorNeed: "clamshell-strong" },
+    psp: { screenTarget: "wide", controlTarget: "balanced", touchNeed: "none", softwareNeed: 0.24, portabilityTarget: 0.72, analogNeed: false },
+    gamecube: { screenTarget: "wide", controlTarget: "stick", touchNeed: "none", softwareNeed: 0.45, portabilityTarget: 0.46, analogNeed: true },
+    wii: { screenTarget: "wide", controlTarget: "stick", touchNeed: "none", softwareNeed: 0.5, portabilityTarget: 0.42, analogNeed: true },
+    ps2: { screenTarget: "wide", controlTarget: "stick", touchNeed: "none", softwareNeed: 0.52, portabilityTarget: 0.42, analogNeed: true },
+    vita: { screenTarget: "wide", controlTarget: "stick", touchNeed: "prefer", softwareNeed: 0.68, portabilityTarget: 0.58, analogNeed: true },
+    android: { screenTarget: "wide", controlTarget: "stick", touchNeed: "prefer", softwareNeed: 0.62, portabilityTarget: 0.44, analogNeed: true },
+    switch: { screenTarget: "wide-large", controlTarget: "stick", touchNeed: "prefer", softwareNeed: 0.88, portabilityTarget: 0.36, analogNeed: true },
+    "wii-u": { screenTarget: "wide-large", controlTarget: "stick", touchNeed: "prefer", softwareNeed: 0.92, portabilityTarget: 0.26, analogNeed: true },
+    xbox: { screenTarget: "wide-large", controlTarget: "stick", touchNeed: "none", softwareNeed: 0.96, portabilityTarget: 0.22, analogNeed: true },
+    ps3: { screenTarget: "wide-large", controlTarget: "stick", touchNeed: "none", softwareNeed: 1, portabilityTarget: 0.18, analogNeed: true },
+    pc: { screenTarget: "wide-large", controlTarget: "stick", touchNeed: "none", softwareNeed: 0.82, portabilityTarget: 0.24, analogNeed: true }
+  };
+  const DEVICE_TRAIT_BASES = {
+    premiumLarge: { label: "Large premium Android", bigScreen: 0.9, retroScreen: 0.46, dualScreen: 0, sticks: 0.92, dpad: 0.58, portability: 0.42, battery: 0.78, software: 0.82, touch: true },
+    premiumPocket: { label: "Compact premium Android", bigScreen: 0.7, retroScreen: 0.52, dualScreen: 0, sticks: 0.88, dpad: 0.62, portability: 0.64, battery: 0.72, software: 0.82, touch: true },
+    premiumDual: { label: "Premium dual screen", bigScreen: 0.74, retroScreen: 0.48, dualScreen: 1, sticks: 0.48, dpad: 0.78, portability: 0.54, battery: 0.64, software: 0.78, touch: true },
+    midDual: { label: "Dual screen Android", bigScreen: 0.62, retroScreen: 0.54, dualScreen: 1, sticks: 0.34, dpad: 0.82, portability: 0.64, battery: 0.68, software: 0.72, touch: true },
+    midClamshell: { label: "Android clamshell", bigScreen: 0.48, retroScreen: 0.58, dualScreen: 0, sticks: 0.44, dpad: 0.82, portability: 0.8, battery: 0.74, software: 0.72, touch: true },
+    verticalAndroid: { label: "Android vertical", bigScreen: 0.42, retroScreen: 0.84, dualScreen: 0, sticks: 0.3, dpad: 0.9, portability: 0.78, battery: 0.7, software: 0.73, touch: true },
+    squareAndroid: { label: "Square Android", bigScreen: 0.58, retroScreen: 0.96, dualScreen: 0, sticks: 0.6, dpad: 0.78, portability: 0.68, battery: 0.74, software: 0.72, touch: true },
+    largeAndroid: { label: "Large Android", bigScreen: 0.84, retroScreen: 0.62, dualScreen: 0, sticks: 0.88, dpad: 0.62, portability: 0.5, battery: 0.72, software: 0.74, touch: true },
+    midAndroid: { label: "Balanced Android", bigScreen: 0.56, retroScreen: 0.64, dualScreen: 0, sticks: 0.78, dpad: 0.66, portability: 0.64, battery: 0.72, software: 0.72, touch: true },
+    retroHorizontal: { label: "Retro horizontal", bigScreen: 0.32, retroScreen: 0.82, dualScreen: 0, sticks: 0.42, dpad: 0.84, portability: 0.82, battery: 0.88, software: 0.66, touch: false },
+    retroVertical: { label: "Retro vertical", bigScreen: 0.28, retroScreen: 0.94, dualScreen: 0, sticks: 0.16, dpad: 0.94, portability: 0.9, battery: 0.9, software: 0.68, touch: false },
+    retroClamshell: { label: "Retro clamshell", bigScreen: 0.26, retroScreen: 0.84, dualScreen: 0, sticks: 0.18, dpad: 0.88, portability: 0.9, battery: 0.86, software: 0.66, touch: false },
+    retroSquare: { label: "Square retro", bigScreen: 0.46, retroScreen: 1, dualScreen: 0, sticks: 0.54, dpad: 0.8, portability: 0.74, battery: 0.82, software: 0.67, touch: false },
+    linuxLarge: { label: "Large retro", bigScreen: 0.74, retroScreen: 0.72, dualScreen: 0, sticks: 0.68, dpad: 0.72, portability: 0.48, battery: 0.86, software: 0.68, touch: false },
+    windowsHandheld: { label: "Windows handheld", bigScreen: 0.8, retroScreen: 0.28, dualScreen: 0, sticks: 0.92, dpad: 0.52, portability: 0.28, battery: 0.56, software: 0.84, touch: true },
+    windowsCompact: { label: "Compact Windows handheld", bigScreen: 0.66, retroScreen: 0.34, dualScreen: 0, sticks: 0.9, dpad: 0.56, portability: 0.44, battery: 0.5, software: 0.84, touch: true },
+    cloudLarge: { label: "Streaming handheld", bigScreen: 0.92, retroScreen: 0.3, dualScreen: 0, sticks: 0.84, dpad: 0.56, portability: 0.46, battery: 0.82, software: 0.78, touch: true }
+  };
+  const DEVICE_TRAIT_OVERRIDES = {
+    "odin3-base": { bigScreen: 0.88, portability: 0.46, battery: 0.8 },
+    "odin3-pro": { bigScreen: 0.88, portability: 0.46, battery: 0.8 },
+    "odin3-max": { bigScreen: 0.88, portability: 0.44, battery: 0.78 },
+    "odin3-ultra": { bigScreen: 0.88, portability: 0.42, battery: 0.76 },
+    "odin2-portal-base": { bigScreen: 0.98, portability: 0.4, battery: 0.76, retroScreen: 0.56 },
+    "odin2-portal-pro": { bigScreen: 0.98, portability: 0.4, battery: 0.76, retroScreen: 0.56 },
+    "odin2-portal-max": { bigScreen: 0.98, portability: 0.38, battery: 0.74, retroScreen: 0.56 },
+    "retroid-pocket-5": { portability: 0.66, bigScreen: 0.7 },
+    "retroid-pocket-6": { portability: 0.62, bigScreen: 0.74, software: 0.78 },
+    "retroid-pocket-6-12gb": { portability: 0.62, bigScreen: 0.74, software: 0.78 },
+    "retroid-pocket-flip-2": { portability: 0.84, battery: 0.7 },
+    "retroid-pocket-classic": { portability: 0.82, touch: false, software: 0.7 },
+    "anbernic-rg556": { bigScreen: 0.88, battery: 0.74, portability: 0.46 },
+    "anbernic-rg557": { bigScreen: 0.9, battery: 0.72, portability: 0.44 },
+    "anbernic-rg406h": { retroScreen: 0.72, portability: 0.68 },
+    "anbernic-rg406v": { retroScreen: 0.88, portability: 0.76 },
+    "anbernic-rg-slide": { bigScreen: 0.78, portability: 0.58 },
+    "anbernic-cube": { bigScreen: 0.62, portability: 0.7 },
+    "anbernic-cube-xx": { bigScreen: 0.5, portability: 0.76 },
+    "powkiddy-x55": { bigScreen: 0.82, portability: 0.42 },
+    "powkiddy-brick": { profileLabel: "Compact vertical retro", retroScreen: 0.92, portability: 0.9, battery: 0.86 },
+    "powkiddy-rgb10max3-pro": { profileLabel: "Large Android retro", bigScreen: 0.82, retroScreen: 0.66, battery: 0.74, portability: 0.46, software: 0.68 },
+    "miyoo-a30": { portability: 0.92, battery: 0.9 },
+    "miyoo-mini-v4": { portability: 1, battery: 0.9 },
+    "miyoo-mini-plus": { portability: 0.9, battery: 0.9 },
+    "miyoo-flip": { portability: 0.9, battery: 0.82 },
+    "ayaneo-pocket-air": { profileLabel: "Premium OLED pocket", bigScreen: 0.74, retroScreen: 0.56, sticks: 0.84, dpad: 0.66, portability: 0.62, battery: 0.8, software: 0.78, touch: true },
+    "ayaneo-pocket-dmg": { profileLabel: "Premium vertical Android", bigScreen: 0.4, retroScreen: 0.9, sticks: 0.22, dpad: 0.94, portability: 0.78, battery: 0.76, software: 0.8, touch: true },
+    "ayaneo-pocket-micro": { profileLabel: "Micro metal Android", bigScreen: 0.34, retroScreen: 0.9, sticks: 0.46, dpad: 0.84, portability: 0.88, battery: 0.62, software: 0.74, touch: true },
+    "ayaneo-pocket-s": { profileLabel: "Large flagship Android", bigScreen: 0.94, retroScreen: 0.44, sticks: 0.92, dpad: 0.58, portability: 0.38, battery: 0.76, software: 0.82, touch: true },
+    "ayaneo-pocket-s-mini": { profileLabel: "Compact flagship Android", bigScreen: 0.72, retroScreen: 0.52, sticks: 0.88, dpad: 0.62, portability: 0.62, battery: 0.72, software: 0.82, touch: true },
+    "ayaneo-pocket-vert": { profileLabel: "Flagship vertical Android", bigScreen: 0.44, retroScreen: 0.9, sticks: 0.24, dpad: 0.94, portability: 0.78, battery: 0.78, software: 0.8, touch: true },
+    "retroid-pocket-4": { profileLabel: "Balanced Android", bigScreen: 0.62, retroScreen: 0.62, sticks: 0.82, dpad: 0.64, portability: 0.66, battery: 0.72, software: 0.76, touch: true },
+    "retroid-pocket-4-pro": { profileLabel: "Balanced Android", bigScreen: 0.62, retroScreen: 0.62, sticks: 0.84, dpad: 0.64, portability: 0.66, battery: 0.72, software: 0.78, touch: true },
+    "retroid-pocket-mini": { profileLabel: "Compact premium Android", bigScreen: 0.56, retroScreen: 0.78, sticks: 0.76, dpad: 0.72, portability: 0.72, battery: 0.68, software: 0.76, touch: true },
+    "logitech-g-cloud": { profileLabel: "Large streaming handheld", bigScreen: 0.94, retroScreen: 0.28, sticks: 0.84, dpad: 0.56, portability: 0.44, battery: 0.84, software: 0.8, touch: true }
+  };
+  const OFFICIAL_DATA_DATE = "2026-04-27";
+  const HARDWARE_PRESETS = {
+    androidCurrent: {
+      touchscreen: true,
+      officialOta: true,
+      osFamily: "Android",
+      sourceCheckedOn: OFFICIAL_DATA_DATE
+    },
+    odin3: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 6,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "AMOLED",
+      refreshRateHz: 120,
+      batteryMah: 8000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      osVersion: 15,
+      weightGrams: 390,
+      cooling: "Active cooling",
+      screenSpec: "6in AMOLED 1080p 120Hz"
+    },
+    thor: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 6,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "AMOLED",
+      secondaryScreenSizeInches: 3.92,
+      secondaryScreenWidthPx: 1240,
+      secondaryScreenHeightPx: 1080,
+      secondaryPanelType: "AMOLED",
+      batteryMah: 6000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      osVersion: 13,
+      cooling: "Active cooling",
+      screenSpec: "6in + 3.92in AMOLED"
+    },
+    odin2Portal: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 7,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "AMOLED",
+      batteryMah: 8000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      osVersion: 13,
+      cooling: "Active cooling",
+      screenSpec: "7in AMOLED 1080p"
+    },
+    retroidAmoled55: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 5.5,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "AMOLED",
+      refreshRateHz: 60,
+      batteryMah: 5000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      osFamily: "Android",
+      osVersion: 13,
+      cooling: "Active cooling",
+      screenSpec: "5.5in AMOLED 1080p 60Hz"
+    },
+    retroidMiniV2: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.92,
+      screenWidthPx: 1240,
+      screenHeightPx: 1080,
+      panelType: "AMOLED",
+      refreshRateHz: 60,
+      batteryMah: 4000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      osFamily: "Android",
+      osVersion: 13,
+      cooling: "Active cooling",
+      screenSpec: "3.92in AMOLED 1240x1080"
+    },
+    retroidClassic: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.92,
+      screenWidthPx: 1240,
+      screenHeightPx: 1080,
+      panelType: "AMOLED",
+      refreshRateHz: 60,
+      batteryMah: 5000,
+      activeCooling: true,
+      osFamily: "Android",
+      osVersion: 14,
+      cooling: "Active cooling",
+      screenSpec: "3.92in AMOLED 1240x1080"
+    },
+    retroidPocket4: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 4.7,
+      screenWidthPx: 1334,
+      screenHeightPx: 750,
+      refreshRateHz: 60,
+      batteryMah: 5000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      osFamily: "Android",
+      cooling: "Active cooling",
+      screenSpec: "4.7in 750x1334 60Hz"
+    },
+    retroid6: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 5.5,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "AMOLED",
+      refreshRateHz: 120,
+      batteryMah: 6000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      osFamily: "Android",
+      osVersion: 13,
+      cooling: "Active cooling",
+      screenSpec: "5.5in AMOLED 1080p 120Hz"
+    },
+    anbernicT820Square: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.95,
+      screenWidthPx: 720,
+      screenHeightPx: 720,
+      panelType: "IPS",
+      batteryMah: 5200,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      osVersion: 13,
+      cooling: "Active cooling",
+      screenSpec: "3.95in IPS 720x720"
+    },
+    anbernicT820Wide: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 4,
+      screenWidthPx: 960,
+      screenHeightPx: 720,
+      panelType: "IPS",
+      batteryMah: 5000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      osVersion: 13,
+      cooling: "Active cooling",
+      screenSpec: "4in IPS 960x720"
+    },
+    anbernicRg556: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 5.48,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "AMOLED",
+      batteryMah: 5500,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      osVersion: 13,
+      cooling: "Active cooling",
+      screenSpec: "5.48in AMOLED 1080p"
+    },
+    anbernicRg557: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 5.48,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "AMOLED",
+      batteryMah: 5500,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      osVersion: 14,
+      cooling: "Active cooling",
+      screenSpec: "5.48in AMOLED 1080p"
+    },
+    anbernicSlide: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 4.7,
+      screenWidthPx: 1280,
+      screenHeightPx: 960,
+      panelType: "LTPS",
+      refreshRateHz: 120,
+      batteryMah: 5000,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      osVersion: 13,
+      cooling: "Active cooling",
+      screenSpec: "4.7in LTPS 1280x960 120Hz"
+    },
+    anbernicLinux35: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.5,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 3300,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      videoOut: true,
+      osFamily: "Linux",
+      screenSpec: "3.5in IPS 640x480"
+    },
+    streamingLarge: {
+      touchscreen: true,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 7,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "IPS",
+      refreshRateHz: 60,
+      batteryMah: 6000,
+      hallSticks: false,
+      analogTriggers: true,
+      activeCooling: false,
+      osFamily: "Android",
+      screenSpec: "7in IPS 1080p 60Hz"
+    },
+    linuxRetroBase: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      osFamily: "Linux"
+    },
+    anbernicH70034: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.4,
+      screenWidthPx: 720,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 3500,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      videoOut: true,
+      osFamily: "Linux",
+      screenSpec: "3.4in IPS 720x480"
+    },
+    anbernicH70035: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.5,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 3300,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      videoOut: true,
+      osFamily: "Linux",
+      screenSpec: "3.5in IPS 640x480"
+    },
+    anbernicH70040: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 4,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 3200,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      videoOut: true,
+      osFamily: "Linux",
+      screenSpec: "4in IPS 640x480"
+    },
+    anbernicH700Square: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.95,
+      screenWidthPx: 720,
+      screenHeightPx: 720,
+      panelType: "IPS",
+      batteryMah: 3800,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      videoOut: true,
+      osFamily: "Linux",
+      screenSpec: "3.95in IPS 720x720"
+    },
+    ayaneoAce: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 4.5,
+      screenWidthPx: 1620,
+      screenHeightPx: 1080,
+      panelType: "IPS",
+      batteryMah: 6000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      osVersion: 13,
+      weightGrams: 310,
+      cooling: "Active cooling",
+      screenSpec: "4.5in IPS 1620x1080"
+    },
+    ayaneoS2: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 6.3,
+      screenWidthPx: 2560,
+      screenHeightPx: 1440,
+      panelType: "IPS",
+      batteryMah: 8000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      osVersion: 14,
+      weightGrams: 428,
+      cooling: "Active cooling",
+      screenSpec: "6.3in IPS 1440p"
+    },
+    ayaneoS2Pro: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 6.3,
+      screenWidthPx: 2560,
+      screenHeightPx: 1440,
+      panelType: "IPS",
+      batteryMah: 10000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      osVersion: 14,
+      weightGrams: 440,
+      cooling: "Active cooling",
+      screenSpec: "6.3in IPS 1440p"
+    },
+    ayaneoEvo: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 7,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "OLED",
+      refreshRateHz: 165,
+      batteryMah: 8600,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      weightGrams: 478,
+      cooling: "Active cooling",
+      screenSpec: "7in OLED 1080p 165Hz"
+    },
+    ayaneoDs: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 7,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "OLED",
+      secondaryScreenSizeInches: 5,
+      secondaryScreenWidthPx: 1024,
+      secondaryScreenHeightPx: 768,
+      secondaryPanelType: "LCD",
+      refreshRateHz: 165,
+      batteryMah: 8000,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Android",
+      cooling: "Active cooling",
+      screenSpec: "7in OLED 1080p + 5in 1024x768"
+    },
+    powkiddyRgb30: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 4,
+      screenWidthPx: 720,
+      screenHeightPx: 720,
+      panelType: "IPS",
+      batteryMah: 4100,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      videoOut: true,
+      osFamily: "Linux",
+      weightGrams: 207,
+      screenSpec: "4in IPS 720x720"
+    },
+    powkiddyRgb20Sx: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 4,
+      screenWidthPx: 720,
+      screenHeightPx: 720,
+      panelType: "IPS",
+      batteryMah: 5000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      videoOut: true,
+      osFamily: "Linux",
+      screenSpec: "4in IPS 720x720"
+    },
+    powkiddyX55: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 5.5,
+      screenWidthPx: 1280,
+      screenHeightPx: 720,
+      panelType: "IPS",
+      batteryMah: 4000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      videoOut: true,
+      osFamily: "Linux",
+      weightGrams: 293,
+      screenSpec: "5.5in IPS 1280x720"
+    },
+    powkiddyRgb10Max3Pro: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 5,
+      screenWidthPx: 854,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 4000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      osFamily: "Linux",
+      screenSpec: "5in IPS 854x480"
+    },
+    powkiddyRgb20S: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.5,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      osFamily: "Linux",
+      screenSpec: "3.5in IPS 640x480"
+    },
+    powkiddyRgb20Pro: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.2,
+      screenWidthPx: 1024,
+      screenHeightPx: 768,
+      panelType: "IPS",
+      batteryMah: 5000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      osFamily: "Linux",
+      screenSpec: "3.2in IPS 1024x768"
+    },
+    powkiddyRgb10X: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.5,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 2800,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      osFamily: "Linux",
+      screenSpec: "3.5in IPS 640x480"
+    },
+    powkiddyV10: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.5,
+      screenWidthPx: 480,
+      screenHeightPx: 320,
+      panelType: "IPS",
+      batteryMah: 3000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      osFamily: "Linux",
+      screenSpec: "3.5in IPS 480x320"
+    },
+    powkiddyV20: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.5,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 5000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      osFamily: "Linux",
+      screenSpec: "3.5in IPS 640x480"
+    },
+    powkiddyV90S: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.5,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 3000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      osFamily: "Linux",
+      screenSpec: "3.5in IPS 640x480"
+    },
+    powkiddyX35H: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.5,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 3000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      videoOut: true,
+      osFamily: "Linux",
+      weightGrams: 181,
+      screenSpec: "3.5in IPS 640x480"
+    },
+    trimuiBrick: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.2,
+      screenWidthPx: 1024,
+      screenHeightPx: 768,
+      panelType: "IPS",
+      batteryMah: 3000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      weightGrams: 181,
+      screenSpec: "3.2in IPS 1024x768"
+    },
+    miyooMiniV4: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 2.8,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 2000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      videoOut: true,
+      osFamily: "Linux",
+      screenSpec: "2.8in IPS 640x480"
+    },
+    miyooMiniPlus: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.5,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 3000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      osFamily: "Linux",
+      weightGrams: 162,
+      screenSpec: "3.5in IPS 640x480"
+    },
+    miyooA30: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 2.8,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 2800,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      osFamily: "Linux",
+      screenSpec: "2.8in IPS 640x480"
+    },
+    miyooFlip: {
+      touchscreen: false,
+      officialOta: false,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 3.5,
+      screenWidthPx: 640,
+      screenHeightPx: 480,
+      panelType: "IPS",
+      batteryMah: 3000,
+      hallSticks: false,
+      analogTriggers: false,
+      activeCooling: false,
+      osFamily: "Linux",
+      weightGrams: 181,
+      screenSpec: "3.5in IPS 640x480"
+    },
+    steamDeckLcd: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 7,
+      screenWidthPx: 1280,
+      screenHeightPx: 800,
+      panelType: "LCD",
+      refreshRateHz: 60,
+      batteryWh: 40,
+      hallSticks: false,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "SteamOS",
+      weightGrams: 669,
+      cooling: "Active cooling",
+      screenSpec: "7in LCD 1280x800 60Hz"
+    },
+    steamDeckOled: {
+      touchscreen: true,
+      officialOta: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 7.4,
+      screenWidthPx: 1280,
+      screenHeightPx: 800,
+      panelType: "OLED",
+      refreshRateHz: 90,
+      batteryWh: 50,
+      hallSticks: false,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "SteamOS",
+      weightGrams: 640,
+      cooling: "Active cooling",
+      screenSpec: "7.4in OLED 1280x800 90Hz"
+    },
+    rogAlly: {
+      touchscreen: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 7,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "IPS",
+      refreshRateHz: 120,
+      batteryWh: 40,
+      hallSticks: false,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Windows",
+      weightGrams: 608,
+      cooling: "Active cooling",
+      screenSpec: "7in IPS 1080p 120Hz"
+    },
+    rogAllyX: {
+      touchscreen: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 7,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "IPS",
+      refreshRateHz: 120,
+      batteryWh: 80,
+      hallSticks: false,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Windows",
+      weightGrams: 678,
+      cooling: "Active cooling",
+      screenSpec: "7in IPS 1080p 120Hz"
+    },
+    msiClaw7Ai: {
+      touchscreen: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 7,
+      screenWidthPx: 1920,
+      screenHeightPx: 1080,
+      panelType: "IPS",
+      refreshRateHz: 120,
+      batteryWh: 53,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Windows",
+      cooling: "Active cooling",
+      screenSpec: "7in IPS 1080p 120Hz"
+    },
+    msiClaw8Ai: {
+      touchscreen: true,
+      sourceCheckedOn: OFFICIAL_DATA_DATE,
+      screenSizeInches: 8,
+      screenWidthPx: 1920,
+      screenHeightPx: 1200,
+      panelType: "IPS",
+      refreshRateHz: 120,
+      batteryWh: 80,
+      hallSticks: true,
+      analogTriggers: true,
+      activeCooling: true,
+      videoOut: true,
+      osFamily: "Windows",
+      weightGrams: 795,
+      cooling: "Active cooling",
+      screenSpec: "8in IPS 1920x1200 120Hz"
+    }
+  };
+  const DEVICE_CATALOG_OVERRIDES = {
+    "odin3-base": {
+      ...HARDWARE_PRESETS.odin3,
+      chipset: "Dragonwing Q8"
+    },
+    "odin3-pro": {
+      ...HARDWARE_PRESETS.odin3,
+      chipset: "Dragonwing Q8"
+    },
+    "odin3-max": {
+      ...HARDWARE_PRESETS.odin3,
+      chipset: "Dragonwing Q8"
+    },
+    "odin3-ultra": {
+      ...HARDWARE_PRESETS.odin3,
+      chipset: "Dragonwing Q8"
+    },
+    "thor-lite": {
+      ...HARDWARE_PRESETS.thor,
+      chipset: "Snapdragon 865"
+    },
+    "thor-base": {
+      ...HARDWARE_PRESETS.thor,
+      chipset: "Snapdragon 8 Gen 2"
+    },
+    "thor-pro": {
+      ...HARDWARE_PRESETS.thor,
+      chipset: "Snapdragon 8 Gen 2"
+    },
+    "thor-max-512": {
+      ...HARDWARE_PRESETS.thor,
+      chipset: "Snapdragon 8 Gen 2"
+    },
+    "thor-max": {
+      ...HARDWARE_PRESETS.thor,
+      chipset: "Snapdragon 8 Gen 2"
+    },
+    "odin2-portal-base": {
+      ...HARDWARE_PRESETS.odin2Portal,
+      chipset: "Snapdragon 8 Gen 2"
+    },
+    "odin2-portal-pro": {
+      ...HARDWARE_PRESETS.odin2Portal,
+      chipset: "Snapdragon 8 Gen 2"
+    },
+    "odin2-portal-max": {
+      ...HARDWARE_PRESETS.odin2Portal,
+      chipset: "Snapdragon 8 Gen 2"
+    },
+    "retroid-pocket-g2": {
+      ...HARDWARE_PRESETS.retroidAmoled55,
+      chipset: "GoldPlus 2.8GHz / Adreno A22",
+      osVersion: 15
+    },
+    "retroid-pocket-5": {
+      ...HARDWARE_PRESETS.retroidAmoled55,
+      priceUsd: 199,
+      chipset: "Snapdragon 865"
+    },
+    "retroid-pocket-flip-2": {
+      ...HARDWARE_PRESETS.retroidAmoled55,
+      chipset: "Snapdragon 865",
+      formFactor: "clamshell"
+    },
+    "retroid-pocket-6": {
+      ...HARDWARE_PRESETS.retroid6,
+      chipset: "Snapdragon 8 Gen 2"
+    },
+    "retroid-pocket-6-12gb": {
+      ...HARDWARE_PRESETS.retroid6,
+      chipset: "Snapdragon 8 Gen 2"
+    },
+    "retroid-pocket-mini-v2": {
+      ...HARDWARE_PRESETS.retroidMiniV2,
+      priceUsd: 179,
+      chipset: "Snapdragon 865",
+      specConfidence: "official"
+    },
+    "retroid-pocket-4": {
+      ...HARDWARE_PRESETS.retroidPocket4,
+      priceUsd: 139,
+      chipset: "Dimensity 900",
+      osVersion: 11,
+      specConfidence: "official"
+    },
+    "retroid-pocket-4-pro": {
+      ...HARDWARE_PRESETS.retroidPocket4,
+      priceUsd: 149,
+      chipset: "Dimensity 1100",
+      osVersion: 13,
+      specConfidence: "official"
+    },
+    "retroid-pocket-mini": {
+      ...HARDWARE_PRESETS.retroidMiniV2,
+      priceUsd: 179,
+      chipset: "Snapdragon 865",
+      specConfidence: "official"
+    },
+    "retroid-pocket-classic": {
+      ...HARDWARE_PRESETS.retroidClassic,
+      chipset: "G1 Gen2"
+    },
+    "anbernic-cube": {
+      ...HARDWARE_PRESETS.anbernicT820Square,
+      chipset: "Unisoc T820",
+      weightGrams: 260
+    },
+    "anbernic-rg406h": {
+      ...HARDWARE_PRESETS.anbernicT820Wide,
+      chipset: "Unisoc T820",
+      weightGrams: 265
+    },
+    "anbernic-rg406v": {
+      ...HARDWARE_PRESETS.anbernicT820Wide,
+      chipset: "Unisoc T820",
+      formFactor: "vertical",
+      weightGrams: 289
+    },
+    "anbernic-rg-slide": {
+      ...HARDWARE_PRESETS.anbernicSlide,
+      chipset: "Unisoc T820",
+      weightGrams: 379
+    },
+    "anbernic-rg556": {
+      ...HARDWARE_PRESETS.anbernicRg556,
+      chipset: "Unisoc T820",
+      weightGrams: 331
+    },
+    "anbernic-rg557": {
+      ...HARDWARE_PRESETS.anbernicRg557,
+      chipset: "Dimensity 8300",
+      ram: 12,
+      storage: 256,
+      weightGrams: 347
+    },
+    "anbernic-rg35xx-h": {
+      ...HARDWARE_PRESETS.anbernicLinux35,
+      chipset: "H700"
+    },
+    "anbernic-rg35xx-plus": {
+      ...HARDWARE_PRESETS.anbernicH70035,
+      chipset: "H700",
+      weightGrams: 186
+    },
+    "anbernic-rg35xx-sp": {
+      ...HARDWARE_PRESETS.anbernicH70035,
+      chipset: "H700",
+      formFactor: "clamshell",
+      weightGrams: 192
+    },
+    "anbernic-rg34xx": {
+      ...HARDWARE_PRESETS.anbernicH70034,
+      chipset: "H700",
+      weightGrams: 188
+    },
+    "anbernic-rg34xxsp": {
+      ...HARDWARE_PRESETS.anbernicH70034,
+      chipset: "H700",
+      formFactor: "clamshell",
+      weightGrams: 178
+    },
+    "anbernic-rg40xx-h": {
+      ...HARDWARE_PRESETS.anbernicH70040,
+      chipset: "H700",
+      weightGrams: 208
+    },
+    "anbernic-rg40xx-v": {
+      ...HARDWARE_PRESETS.anbernicH70040,
+      chipset: "H700",
+      formFactor: "vertical",
+      weightGrams: 216
+    },
+    "anbernic-cube-xx": {
+      ...HARDWARE_PRESETS.anbernicH700Square,
+      chipset: "H700",
+      weightGrams: 246
+    },
+    "ayaneo-pocket-ace": {
+      ...HARDWARE_PRESETS.ayaneoAce,
+      chipset: "Snapdragon G3x Gen 2"
+    },
+    "ayaneo-pocket-s2": {
+      ...HARDWARE_PRESETS.ayaneoS2,
+      chipset: "Snapdragon G3 Gen 3"
+    },
+    "ayaneo-pocket-evo": {
+      ...HARDWARE_PRESETS.ayaneoEvo,
+      chipset: "Snapdragon G3x Gen 2"
+    },
+    "ayaneo-pocket-ds": {
+      ...HARDWARE_PRESETS.ayaneoDs,
+      chipset: "Snapdragon G3x Gen 2"
+    },
+    "ayaneo-pocket-air": {
+      ...HARDWARE_PRESETS.androidCurrent,
+      ram: 6,
+      storage: 128,
+      performanceTier: "high",
+      computeRank: 3,
+      useCaseLane: "balanced-android",
+      positioning: "premium",
+      priceUsd: 299,
+      priceIndex: 4,
+      available: true,
+      recommendable: true,
+      chipset: "Dimensity 1200",
+      screenSpec: "5.5in OLED",
+      batteryMah: 7350,
+      cooling: "Active cooling",
+      osFamily: "Android",
+      specConfidence: "official"
+    },
+    "ayaneo-pocket-air-mini": {
+      ...HARDWARE_PRESETS.androidCurrent,
+      performanceTier: "mid",
+      computeRank: 2,
+      priceUsd: 99.99,
+      priceIndex: 1,
+      available: true,
+      recommendable: false,
+      osFamily: "Android",
+      specConfidence: "official"
+    },
+    "ayaneo-pocket-dmg": {
+      ...HARDWARE_PRESETS.androidCurrent,
+      ram: 8,
+      storage: 128,
+      performanceTier: "enthusiast",
+      computeRank: 4,
+      useCaseLane: "high-end-android",
+      formFactor: "vertical",
+      positioning: "premium",
+      priceUsd: 449,
+      priceIndex: 5,
+      available: true,
+      recommendable: true,
+      chipset: "Snapdragon G3x Gen 2",
+      screenSpec: "3.92in OLED",
+      batteryMah: 6000,
+      cooling: "Active cooling",
+      osFamily: "Android",
+      specConfidence: "official"
+    },
+    "ayaneo-pocket-micro": {
+      ...HARDWARE_PRESETS.androidCurrent,
+      ram: 6,
+      storage: 128,
+      performanceTier: "mid",
+      computeRank: 2,
+      useCaseLane: "retro-focused",
+      positioning: "balanced",
+      priceUsd: 219,
+      priceIndex: 3,
+      available: true,
+      recommendable: true,
+      chipset: "Helio G99",
+      screenSpec: "3.5in 960x640",
+      osFamily: "Android",
+      specConfidence: "official"
+    },
+    "ayaneo-pocket-s": {
+      ...HARDWARE_PRESETS.androidCurrent,
+      ram: 12,
+      storage: 128,
+      performanceTier: "enthusiast",
+      computeRank: 4,
+      useCaseLane: "high-end-android",
+      positioning: "premium",
+      priceUsd: 559,
+      priceIndex: 6,
+      available: true,
+      recommendable: true,
+      chipset: "Snapdragon G3x Gen 2",
+      screenSpec: "6in 1080p",
+      cooling: "Active cooling",
+      osFamily: "Android",
+      specConfidence: "official"
+    },
+    "ayaneo-pocket-s-mini": {
+      ...HARDWARE_PRESETS.androidCurrent,
+      ram: 8,
+      storage: 128,
+      performanceTier: "enthusiast",
+      computeRank: 4,
+      useCaseLane: "high-end-android",
+      positioning: "premium",
+      priceUsd: 319,
+      priceIndex: 4,
+      available: true,
+      recommendable: true,
+      chipset: "Snapdragon G3x Gen 2",
+      screenSpec: "5.5in OLED",
+      cooling: "Active cooling",
+      osFamily: "Android",
+      specConfidence: "official"
+    },
+    "ayaneo-pocket-s2-pro": {
+      ...HARDWARE_PRESETS.ayaneoS2Pro,
+      ram: 16,
+      storage: 512,
+      performanceTier: "enthusiast",
+      computeRank: 4,
+      useCaseLane: "high-end-android",
+      positioning: "premium",
+      priceUsd: 559,
+      priceIndex: 6,
+      available: false,
+      recommendable: false,
+      chipset: "Snapdragon G3 Gen 3",
+      specConfidence: "official"
+    },
+    "ayaneo-pocket-vert": {
+      ...HARDWARE_PRESETS.androidCurrent,
+      ram: 8,
+      storage: 128,
+      performanceTier: "enthusiast",
+      computeRank: 4,
+      useCaseLane: "high-end-android",
+      formFactor: "vertical",
+      positioning: "premium",
+      priceUsd: 269,
+      priceIndex: 4,
+      available: true,
+      recommendable: true,
+      chipset: "Snapdragon 8+ Gen 1",
+      batteryMah: 6000,
+      osFamily: "Android",
+      specConfidence: "official"
+    },
+    "powkiddy-rgb10max3-pro": {
+      ...HARDWARE_PRESETS.powkiddyRgb10Max3Pro,
+      performanceTier: "mid",
+      computeRank: 2,
+      useCaseLane: "balanced-android",
+      positioning: "balanced",
+      priceUsd: 114.99,
+      priceIndex: 2,
+      available: true,
+      recommendable: true,
+      chipset: "Amlogic A311D",
+      specConfidence: "official"
+    },
+    "powkiddy-rgb10x": {
+      ...HARDWARE_PRESETS.powkiddyRgb10X,
+      specConfidence: "official"
+    },
+    "powkiddy-v10": {
+      ...HARDWARE_PRESETS.powkiddyV10,
+      chipset: "Quad-core Cortex-A35 1.5GHz",
+      specConfidence: "official"
+    },
+    "powkiddy-v90s": {
+      ...HARDWARE_PRESETS.powkiddyV90S,
+      chipset: "Allwinner 133 Plus",
+      specConfidence: "official"
+    },
+    "powkiddy-v20": {
+      ...HARDWARE_PRESETS.powkiddyV20,
+      chipset: "Allwinner A133P",
+      specConfidence: "official"
+    },
+    "powkiddy-rgb20s": {
+      ...HARDWARE_PRESETS.powkiddyRgb20S,
+      chipset: "RK3326",
+      specConfidence: "official"
+    },
+    "powkiddy-x35h": {
+      ...HARDWARE_PRESETS.powkiddyX35H,
+      chipset: "RK3566",
+      specConfidence: "official"
+    },
+    "powkiddy-rgb20-pro": {
+      ...HARDWARE_PRESETS.powkiddyRgb20Pro,
+      chipset: "ARM quad-core 1.8GHz",
+      specConfidence: "official"
+    },
+    "powkiddy-rgb20sx": {
+      ...HARDWARE_PRESETS.powkiddyRgb20Sx,
+      chipset: "ARM quad-core 1.8GHz",
+      formFactor: "vertical",
+      specConfidence: "official"
+    },
+    "powkiddy-rgb30": {
+      ...HARDWARE_PRESETS.powkiddyRgb30,
+      chipset: "RK3566",
+      specConfidence: "official"
+    },
+    "powkiddy-x55": {
+      ...HARDWARE_PRESETS.powkiddyX55,
+      chipset: "RK3566",
+      specConfidence: "official"
+    },
+    "powkiddy-brick": {
+      ...HARDWARE_PRESETS.trimuiBrick,
+      ram: 2,
+      storage: 64,
+      performanceTier: "light",
+      computeRank: 1,
+      useCaseLane: "retro-focused",
+      formFactor: "vertical",
+      positioning: "balanced",
+      priceUsd: 64.99,
+      priceIndex: 1,
+      available: true,
+      recommendable: true,
+      chipset: "Allwinner A133P",
+      specConfidence: "official"
+    },
+    "miyoo-a30": {
+      ...HARDWARE_PRESETS.miyooA30,
+      specConfidence: "official"
+    },
+    "miyoo-mini-v4": {
+      ...HARDWARE_PRESETS.miyooMiniV4,
+      specConfidence: "official"
+    },
+    "miyoo-mini-plus": {
+      ...HARDWARE_PRESETS.miyooMiniPlus,
+      chipset: "Dual-core Cortex-A7 1.2GHz",
+      specConfidence: "official"
+    },
+    "miyoo-flip": {
+      ...HARDWARE_PRESETS.miyooFlip,
+      chipset: "RK3566",
+      specConfidence: "official"
+    },
+    "steamdeck-lcd-256": {
+      ...HARDWARE_PRESETS.steamDeckLcd,
+      priceUsd: 549,
+      chipset: "AMD custom APU (7 nm)",
+      specConfidence: "official"
+    },
+    "steamdeck-oled-512": {
+      ...HARDWARE_PRESETS.steamDeckOled,
+      priceUsd: 649,
+      chipset: "AMD custom APU (6 nm)",
+      specConfidence: "official"
+    },
+    "steamdeck-oled-1tb": {
+      ...HARDWARE_PRESETS.steamDeckOled,
+      chipset: "AMD custom APU (6 nm)",
+      specConfidence: "official"
+    },
+    "rog-ally-z1": {
+      ...HARDWARE_PRESETS.rogAlly,
+      priceUsd: 499.99,
+      chipset: "AMD Ryzen Z1",
+      specConfidence: "official"
+    },
+    "rog-ally-z1-extreme": {
+      ...HARDWARE_PRESETS.rogAlly,
+      priceUsd: 699,
+      chipset: "AMD Ryzen Z1 Extreme",
+      specConfidence: "official"
+    },
+    "rog-ally-x": {
+      ...HARDWARE_PRESETS.rogAllyX,
+      priceUsd: 799.99,
+      chipset: "AMD Ryzen Z1 Extreme",
+      specConfidence: "official"
+    },
+    "msi-claw-7-ai-plus": {
+      ...HARDWARE_PRESETS.msiClaw7Ai,
+      chipset: "Intel Core Ultra 7 258V",
+      specConfidence: "official"
+    },
+    "msi-claw-8-ai-plus": {
+      ...HARDWARE_PRESETS.msiClaw8Ai,
+      priceUsd: 1199.99,
+      chipset: "Intel Core Ultra 7 258V",
+      specConfidence: "official"
+    },
+    "logitech-g-cloud": {
+      ...HARDWARE_PRESETS.streamingLarge,
+      priceUsd: 299.99,
+      priceIndex: 4,
+      available: true,
+      recommendable: false,
+      chipset: "Snapdragon 720G",
+      specConfidence: "official"
+    }
+  };
+  const DEVICE_YEAR_OVERRIDES = {
+    "odin3-base": 2026,
+    "odin3-pro": 2026,
+    "odin3-max": 2026,
+    "odin3-ultra": 2026,
+    "thor-lite": 2026,
+    "thor-base": 2026,
+    "thor-pro": 2026,
+    "thor-max-512": 2026,
+    "thor-max": 2026,
+    "odin2-portal-base": 2025,
+    "odin2-portal-pro": 2025,
+    "odin2-portal-max": 2025,
+    "odin-lite": 2022,
+    "odin-base": 2022,
+    "odin-pro": 2022,
+    "odin2-base": 2023,
+    "odin2-pro": 2023,
+    "odin2-max": 2023,
+    "loki": 2023,
+    "retroid-pocket-g2": 2026,
+    "retroid-pocket-5": 2024,
+    "retroid-pocket-flip-2": 2025,
+    "retroid-pocket-6": 2026,
+    "retroid-pocket-6-12gb": 2026,
+    "retroid-pocket-mini-v2": 2024,
+    "retroid-pocket-classic": 2025,
+    "retroid-pocket-2": 2020,
+    "retroid-pocket-2-plus": 2021,
+    "retroid-pocket-3": 2022,
+    "retroid-pocket-3-plus": 2022,
+    "retroid-pocket-flip": 2023,
+    "retroid-pocket-4": 2024,
+    "retroid-pocket-4-pro": 2024,
+    "retroid-pocket-mini": 2024,
+    "anbernic-rg280v": 2020,
+    "anbernic-rg300x": 2021,
+    "anbernic-rg351p": 2020,
+    "anbernic-rg351m": 2020,
+    "anbernic-rg351mp": 2021,
+    "anbernic-rg353m": 2022,
+    "anbernic-rg353p": 2022,
+    "anbernic-rg353ps": 2023,
+    "anbernic-rg353v": 2022,
+    "anbernic-rg353vs": 2022,
+    "anbernic-rg405m": 2023,
+    "anbernic-rg405v": 2023,
+    "anbernic-rg505": 2022,
+    "anbernic-rg552": 2021,
+    "anbernic-rg-arc-d": 2023,
+    "anbernic-rg-arc-s": 2023,
+    "anbernic-rg35xx": 2022,
+    "anbernic-rg35xx-plus": 2023,
+    "anbernic-rg35xx-h": 2024,
+    "anbernic-rg35xx-sp": 2024,
+    "anbernic-rg34xx": 2024,
+    "anbernic-rg34xxsp": 2025,
+    "anbernic-rg40xx-h": 2024,
+    "anbernic-rg40xx-v": 2024,
+    "anbernic-cube": 2024,
+    "anbernic-cube-xx": 2024,
+    "anbernic-rg406h": 2024,
+    "anbernic-rg406v": 2024,
+    "anbernic-rg556": 2024,
+    "anbernic-rg557": 2025,
+    "anbernic-rg-slide": 2025,
+    "anbernic-win600": 2022,
+    "powkiddy-a12": 2020,
+    "powkiddy-rgb10": 2020,
+    "powkiddy-rgb10-max": 2021,
+    "powkiddy-rgb10-max-2": 2021,
+    "powkiddy-rgb10max3-pro": 2024,
+    "powkiddy-rgb10x": 2024,
+    "powkiddy-rgb20s": 2022,
+    "powkiddy-rgb20-pro": 2024,
+    "powkiddy-rgb20sx": 2024,
+    "powkiddy-rgb30": 2023,
+    "powkiddy-rgb55": 2024,
+    "powkiddy-x18s": 2021,
+    "powkiddy-x28": 2023,
+    "powkiddy-x35s": 2024,
+    "powkiddy-x35h": 2024,
+    "powkiddy-x55": 2023,
+    "powkiddy-v10": 2024,
+    "powkiddy-v20": 2025,
+    "powkiddy-v90s": 2025,
+    "powkiddy-brick": 2024,
+    "miyoo-mini": 2022,
+    "miyoo-mini-v4": 2024,
+    "miyoo-mini-plus": 2023,
+    "miyoo-mini-plus-v3": 2024,
+    "miyoo-a30": 2024,
+    "miyoo-flip": 2025,
+    "ayaneo-pocket-air": 2023,
+    "ayaneo-pocket-air-mini": 2024,
+    "ayaneo-pocket-ace": 2025,
+    "ayaneo-pocket-dmg": 2025,
+    "ayaneo-pocket-micro": 2024,
+    "ayaneo-pocket-s": 2024,
+    "ayaneo-pocket-s-mini": 2025,
+    "ayaneo-pocket-s2": 2026,
+    "ayaneo-pocket-s2-pro": 2026,
+    "ayaneo-pocket-evo": 2025,
+    "ayaneo-pocket-ds": 2026,
+    "ayaneo-pocket-vert": 2025,
+    "rog-ally-z1": 2023,
+    "rog-ally-z1-extreme": 2023,
+    "rog-ally-x": 2024,
+    "msi-claw-7-ai-plus": 2024,
+    "msi-claw-8-ai-plus": 2024,
+    "steamdeck-lcd-256": 2022,
+    "steamdeck-oled-512": 2023,
+    "steamdeck-oled-1tb": 2023,
+    "logitech-g-cloud": 2022,
+    "razer-edge": 2023
+  };
+  const DEVICES = buildDeviceCatalog(window.DevicesData || []);
 
   const systemMap = new Map(SYSTEMS.map((system) => [system.id, system]));
   const deviceMap = new Map(DEVICES.map((device) => [device.id, device]));
+  const livePoolDeviceIds = new Set(DEVICES.map((device) => device.id));
   const brandMap = new Map((RULES.brands || []).map((brand) => [brand.id, brand]));
-  const ownedDevicesByBrand = RULES.ownedDevicesByBrand || {};
-  const ownedDeviceCompareProfiles = RULES.ownedDeviceCompareProfiles || {};
   const useCaseLaneProfiles = RULES.useCaseLaneProfiles || {};
   const recommendableDevices = DEVICES.filter((device) => device.available && device.recommendable);
   const recommendableDeviceIds = new Set(recommendableDevices.map((device) => device.id));
@@ -27,6 +1549,194 @@
     currency: "USD",
     maximumFractionDigits: 0
   });
+
+  function buildDeviceCatalog(baseDevices) {
+    const catalog = baseDevices.map((device) => applyDeviceCatalogOverride(device, false));
+    const baseIds = new Set(catalog.map((device) => device.id));
+
+    Object.entries(ownedDevicesByBrand).forEach(([brandId, devices]) => {
+      (devices || []).forEach((ownedDevice) => {
+        if (baseIds.has(ownedDevice.id)) {
+          return;
+        }
+
+        const comparisonProfile = getCatalogCompareProfile(brandId, ownedDevice.id);
+        if (!comparisonProfile) {
+          return;
+        }
+
+        catalog.push(buildCollectedCatalogDevice(brandId, ownedDevice, comparisonProfile));
+      });
+    });
+
+    return catalog;
+  }
+
+  function getCatalogCompareProfile(brandId, deviceId) {
+    const brandProfiles = ownedDeviceCompareProfiles[brandId];
+    if (!brandProfiles) {
+      return null;
+    }
+
+    const matchedProfile = (brandProfiles.profiles || []).find((profile) => (profile.ids || []).includes(deviceId));
+    return matchedProfile || brandProfiles.fallback || null;
+  }
+
+  function inferCatalogCompareClass(brandId, name) {
+    const lowerName = (name || "").toLowerCase();
+
+    if (brandId === "gpd" || brandId === "onexplayer" || brandId === "asus" || brandId === "msi" || brandId === "valve") {
+      return "windows-handheld";
+    }
+
+    if (brandId === "razer" || brandId === "logitech-g") {
+      return "cloud-streaming";
+    }
+
+    if (brandId === "gameforce" || brandId === "kinhank" || brandId === "miyoo" || brandId === "powkiddy" || brandId === "zpg") {
+      return "linux-retro";
+    }
+
+    if (brandId === "ayaneo" && !lowerName.includes("pocket")) {
+      return "windows-handheld";
+    }
+
+    return "android-retro";
+  }
+
+  function getCatalogTierId(rank) {
+    const normalizedRank = Number.isFinite(rank) ? Math.max(1, Math.min(4, Math.round(rank))) : 1;
+    const tierMap = {
+      1: "light",
+      2: "mid",
+      3: "high",
+      4: "enthusiast"
+    };
+    return tierMap[normalizedRank] || "light";
+  }
+
+  function getCatalogUseCaseLane(device) {
+    if (device.formFactor === "clamshell") {
+      return "clamshell";
+    }
+
+    if (device.useCaseLane) {
+      return device.useCaseLane;
+    }
+
+    const compareClass = device.compareClass || inferCatalogCompareClass(device.brand, device.name);
+
+    if (compareClass === "linux-retro") {
+      return "retro-focused";
+    }
+
+    if ((device.computeRank || 1) >= 4) {
+      return "high-end-android";
+    }
+
+    if ((device.computeRank || 1) >= 3 || compareClass === "cloud-streaming") {
+      return "balanced-android";
+    }
+
+    return "retro-focused";
+  }
+
+  function getCatalogPositioning(device) {
+    if (device.dualScreen) {
+      return "dual-screen";
+    }
+
+    if ((device.computeRank || 1) >= 4) {
+      return "premium";
+    }
+
+    return "balanced";
+  }
+
+  function getCatalogPriceIndex(priceUsd, computeRank) {
+    if (Number.isFinite(priceUsd) && priceUsd > 0) {
+      if (priceUsd >= 550) {
+        return 6;
+      }
+
+      if (priceUsd >= 400) {
+        return 5;
+      }
+
+      if (priceUsd >= 300) {
+        return 4;
+      }
+
+      if (priceUsd >= 180) {
+        return 3;
+      }
+
+      if (priceUsd >= 90) {
+        return 2;
+      }
+
+      return 1;
+    }
+
+    return Math.max(1, Math.min(6, (computeRank || 1) + 1));
+  }
+
+  function applyDeviceCatalogOverride(device, generated) {
+    const override = DEVICE_CATALOG_OVERRIDES[device.id] || {};
+    const merged = {
+      ...device,
+      ...override
+    };
+
+    if (!Number.isFinite(merged.priceUsd) || merged.priceUsd <= 0) {
+      merged.priceUsd = null;
+    }
+
+    merged.available = override.available !== undefined ? Boolean(override.available) : Boolean(device.available);
+    merged.recommendable = merged.available && (override.recommendable !== undefined ? Boolean(override.recommendable) : Boolean(device.recommendable));
+    merged.compareClass = override.compareClass || device.compareClass || inferCatalogCompareClass(merged.brand, merged.name);
+    merged.performanceTier = merged.performanceTier || getCatalogTierId(merged.computeRank);
+    merged.useCaseLane = getCatalogUseCaseLane(merged);
+    merged.positioning = merged.positioning || getCatalogPositioning(merged);
+    merged.priceIndex = Number.isFinite(merged.priceIndex) ? merged.priceIndex : getCatalogPriceIndex(merged.priceUsd, merged.computeRank);
+    merged.catalogGenerated = generated;
+    merged.specConfidence = merged.specConfidence || (generated ? "profile" : "official");
+    merged.catalogSource = generated
+      ? (merged.specConfidence === "official" ? "official" : (merged.catalogSource || "collected"))
+      : (merged.catalogSource || "live");
+
+    return merged;
+  }
+
+  function buildCollectedCatalogDevice(brandId, ownedDevice, comparisonProfile) {
+    const compareClass = comparisonProfile.compareClass || inferCatalogCompareClass(brandId, ownedDevice.name);
+    const computeRank = Number.isFinite(comparisonProfile.computeRank) ? comparisonProfile.computeRank : 1;
+    const seededDevice = {
+      id: ownedDevice.id,
+      brand: brandId,
+      name: ownedDevice.name,
+      family: ownedDevice.name,
+      ram: Number.isFinite(comparisonProfile.ram) ? comparisonProfile.ram : 4,
+      storage: Number.isFinite(comparisonProfile.storage) ? comparisonProfile.storage : 128,
+      performanceTier: getCatalogTierId(computeRank),
+      computeRank,
+      formFactor: comparisonProfile.formFactor || "horizontal",
+      dualScreen: Boolean(comparisonProfile.dualScreen),
+      compareClass,
+      priceUsd: null,
+      available: false,
+      recommendable: false,
+      catalogGenerated: true,
+      specConfidence: "profile",
+      catalogSource: "collected"
+    };
+
+    seededDevice.useCaseLane = getCatalogUseCaseLane(seededDevice);
+    seededDevice.positioning = getCatalogPositioning(seededDevice);
+    seededDevice.priceIndex = getCatalogPriceIndex(seededDevice.priceUsd, seededDevice.computeRank);
+
+    return applyDeviceCatalogOverride(seededDevice, true);
+  }
 
   function getValidPrice(device) {
     return device && Number.isFinite(device.priceUsd) && device.priceUsd > 0
@@ -90,6 +1800,7 @@
     renderSystemSelector();
     renderSystemCards();
     updateDerivedUi(false);
+    scrollToRequestedReferenceSection();
   }
 
   function cacheElements() {
@@ -119,6 +1830,12 @@
     elements.useCaseLaneSelect = document.getElementById("useCaseLaneSelect");
     elements.formFactorSimpleSelect = document.getElementById("formFactorSimpleSelect");
     elements.brandPreferenceSelect = document.getElementById("brandPreferenceSelect");
+    elements.sessionStyleSelect = document.getElementById("sessionStyleSelect");
+    elements.portabilityPrioritySelect = document.getElementById("portabilityPrioritySelect");
+    elements.screenPrioritySelect = document.getElementById("screenPrioritySelect");
+    elements.controlPrioritySelect = document.getElementById("controlPrioritySelect");
+    elements.softwarePreferenceSelect = document.getElementById("softwarePreferenceSelect");
+    elements.touchPreferenceSelect = document.getElementById("touchPreferenceSelect");
     elements.preferencePoolNote = document.getElementById("preferencePoolNote");
     elements.sdCardToggle = document.getElementById("sdCardToggle");
     elements.sdCardDetails = document.getElementById("sdCardDetails");
@@ -135,6 +1852,7 @@
     elements.resultsContent = document.getElementById("resultsContent");
     elements.resultsSection = document.getElementById("resultsSection");
     elements.changelogSection = document.getElementById("changelogSection");
+    elements.roadmapSection = document.getElementById("roadmapSection");
     elements.resultsKicker = document.getElementById("resultsKicker");
     elements.resultsTitle = document.getElementById("resultsTitle");
     elements.saveStatus = document.getElementById("saveStatus");
@@ -201,6 +1919,12 @@
     const validModeIds = new Set((RULES.workflowModes || []).map((mode) => mode.id));
     const validLaneIds = new Set((RULES.useCaseLanes || []).map((lane) => lane.id));
     const validBrandIds = new Set((RULES.brands || []).map((brand) => brand.id));
+    const validSessionStyles = new Set(["mixed", "short", "long"]);
+    const validPortabilityPriorities = new Set(["balanced", "carry", "pocket", "desk"]);
+    const validScreenPriorities = new Set(["balanced", "big", "retro", "dual"]);
+    const validControlPriorities = new Set(["balanced", "sticks", "dpad"]);
+    const validSoftwarePreferences = new Set(["balanced", "stable", "tinker"]);
+    const validTouchPreferences = new Set(["no-preference", "required", "avoid"]);
     const validSelected = Array.isArray(rawState.selectedSystems)
       ? rawState.selectedSystems.filter((id, index, array) => systemMap.has(id) && array.indexOf(id) === index)
       : [];
@@ -228,6 +1952,12 @@
     normalized.formFactor = ["horizontal", "vertical", "clamshell", "no-preference"].includes(rawState.formFactor)
       ? rawState.formFactor
       : normalized.formFactor;
+    normalized.sessionStyle = validSessionStyles.has(rawState.sessionStyle) ? rawState.sessionStyle : normalized.sessionStyle;
+    normalized.portabilityPriority = validPortabilityPriorities.has(rawState.portabilityPriority) ? rawState.portabilityPriority : normalized.portabilityPriority;
+    normalized.screenPriority = validScreenPriorities.has(rawState.screenPriority) ? rawState.screenPriority : normalized.screenPriority;
+    normalized.controlPriority = validControlPriorities.has(rawState.controlPriority) ? rawState.controlPriority : normalized.controlPriority;
+    normalized.softwarePreference = validSoftwarePreferences.has(rawState.softwarePreference) ? rawState.softwarePreference : normalized.softwarePreference;
+    normalized.touchPreference = validTouchPreferences.has(rawState.touchPreference) ? rawState.touchPreference : normalized.touchPreference;
     normalized.useSdCard = rawState.useSdCard === "yes" ? "yes" : "no";
     normalized.sdCardSizeGb = normalizeSdCardSize(rawState.sdCardSizeGb, normalized.sdCardSizeGb);
     normalized.futureProofBias = snapRangeValue(rawState.futureProofBias, normalized.futureProofBias);
@@ -294,6 +2024,11 @@
   }
 
   function bindStaticEvents() {
+    window.addEventListener("hashchange", () => {
+      applyMode();
+      scrollToRequestedReferenceSection("smooth");
+    });
+
     elements.modeSelect.addEventListener("change", (event) => {
       state.mode = event.target.value;
       applyMode();
@@ -347,6 +2082,36 @@
 
     elements.brandPreferenceSelect.addEventListener("change", (event) => {
       state.brandPreference = event.target.value;
+      updateDerivedUi(false);
+    });
+
+    elements.sessionStyleSelect.addEventListener("change", (event) => {
+      state.sessionStyle = event.target.value;
+      updateDerivedUi(false);
+    });
+
+    elements.portabilityPrioritySelect.addEventListener("change", (event) => {
+      state.portabilityPriority = event.target.value;
+      updateDerivedUi(false);
+    });
+
+    elements.screenPrioritySelect.addEventListener("change", (event) => {
+      state.screenPriority = event.target.value;
+      updateDerivedUi(false);
+    });
+
+    elements.controlPrioritySelect.addEventListener("change", (event) => {
+      state.controlPriority = event.target.value;
+      updateDerivedUi(false);
+    });
+
+    elements.softwarePreferenceSelect.addEventListener("change", (event) => {
+      state.softwarePreference = event.target.value;
+      updateDerivedUi(false);
+    });
+
+    elements.touchPreferenceSelect.addEventListener("change", (event) => {
+      state.touchPreference = event.target.value;
       updateDerivedUi(false);
     });
 
@@ -525,7 +2290,7 @@
     const placeholder = brandId ? `Select ${escapeHtml(getBrandName(brandId))} device` : "Select your brand first";
     selectElement.innerHTML = [
       `<option value="">${placeholder}</option>`,
-      ...devices.map((device) => `<option value="${device.id}">${escapeHtml(device.name)}</option>`)
+      ...devices.map((device) => `<option value="${device.id}">${escapeHtml(formatDeviceDisplayName(device))}</option>`)
     ].join("");
   }
 
@@ -558,6 +2323,24 @@
 
     if (elements.brandPreferenceSelect) {
       elements.brandPreferenceSelect.value = state.brandPreference;
+    }
+    if (elements.sessionStyleSelect) {
+      elements.sessionStyleSelect.value = state.sessionStyle;
+    }
+    if (elements.portabilityPrioritySelect) {
+      elements.portabilityPrioritySelect.value = state.portabilityPriority;
+    }
+    if (elements.screenPrioritySelect) {
+      elements.screenPrioritySelect.value = state.screenPriority;
+    }
+    if (elements.controlPrioritySelect) {
+      elements.controlPrioritySelect.value = state.controlPriority;
+    }
+    if (elements.softwarePreferenceSelect) {
+      elements.softwarePreferenceSelect.value = state.softwarePreference;
+    }
+    if (elements.touchPreferenceSelect) {
+      elements.touchPreferenceSelect.value = state.touchPreference;
     }
 
     if (sdCardRadio) {
@@ -607,13 +2390,44 @@
     syncSectionFolds();
   }
 
+  function getRequestedReferenceSectionId() {
+    const hash = window.location.hash || "";
+
+    if (hash === "#changelogSection" || hash === "#roadmapSection") {
+      return hash.slice(1);
+    }
+
+    return "";
+  }
+
+  function scrollToRequestedReferenceSection(behavior = "auto") {
+    const sectionId = getRequestedReferenceSectionId();
+    if (!sectionId) {
+      return;
+    }
+
+    const target = document.getElementById(sectionId);
+    if (!target || target.hidden) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior, block: "start" });
+    });
+  }
+
   function toggleModePanels() {
     const hasModeSelection = Boolean(state.mode);
     const compareMode = state.mode === "compated";
-    elements.modeGatePanel.hidden = hasModeSelection;
+    const requestedReferenceSectionId = getRequestedReferenceSectionId();
+    const showStandaloneReference = !hasModeSelection && Boolean(requestedReferenceSectionId);
+    elements.modeGatePanel.hidden = hasModeSelection || showStandaloneReference;
     elements.layoutTop.hidden = !hasModeSelection;
     elements.resultsSection.hidden = !hasModeSelection;
-    elements.changelogSection.hidden = !hasModeSelection;
+    elements.changelogSection.hidden = !hasModeSelection && requestedReferenceSectionId !== "changelogSection";
+    if (elements.roadmapSection) {
+      elements.roadmapSection.hidden = !hasModeSelection && requestedReferenceSectionId !== "roadmapSection";
+    }
     elements.quizForm.hidden = !hasModeSelection || compareMode;
     elements.compareModePanel.hidden = !hasModeSelection || !compareMode;
 
@@ -1291,7 +3105,7 @@
     }
   }
 
-  function analyzeState() {
+  function buildSelectedSystemBreakdown() {
     const breakdown = [];
 
     state.selectedSystems.forEach((systemId) => {
@@ -1358,10 +3172,18 @@
         });
     });
 
+    return breakdown;
+  }
+
+  function analyzeState() {
+    const breakdown = buildSelectedSystemBreakdown();
+
     const fitModel = getActiveFitModel(breakdown);
     const storage = analyzeStorage(breakdown, fitModel);
     const performance = analyzePerformance(breakdown, fitModel);
+    const accuracy = analyzeAccuracy(breakdown);
     const laneSupport = getActiveLaneSupportSummary(breakdown);
+    const currentOwnedDevice = getCurrentComparisonDevice();
 
     if (laneSupport.blocked.length) {
       return {
@@ -1371,25 +3193,27 @@
         fitModel,
         storage,
         performance,
+        accuracy,
+        confidence: analyzeRecommendationConfidence(breakdown, null, accuracy, currentOwnedDevice),
         laneSupport,
         scoring: createEmptyScoring(),
         sdSavingsPaths: [],
         currentComparison: null,
-        ownershipNote: buildOwnershipNote(getCurrentComparisonDevice(), null),
+        ownershipNote: buildOwnershipNote(currentOwnedDevice, null),
         dualScreenNeed: calculateDualScreenNeed(breakdown),
         headlineSystems: getHeadlineSystems(breakdown),
         keepCurrent: false
       };
     }
 
-    const scoring = scoreDevices(breakdown, storage, performance);
+    const scoring = scoreDevices(breakdown, storage, performance, accuracy);
     const dualScreenNeed = calculateDualScreenNeed(breakdown);
-    const currentOwnedDevice = getCurrentComparisonDevice();
     const currentComparison = currentOwnedDevice && scoring.recommended
       ? compareCurrentDevice(currentOwnedDevice, scoring.recommended, performance, storage, dualScreenNeed)
       : null;
     const ownershipNote = buildOwnershipNote(currentOwnedDevice, currentComparison);
     const sdSavingsPaths = findSdSavingsPaths(breakdown, storage, performance, scoring);
+    const confidence = analyzeRecommendationConfidence(breakdown, scoring.recommended, accuracy, currentOwnedDevice);
 
     return {
       mode: "recommendation",
@@ -1398,6 +3222,8 @@
       fitModel,
       storage,
       performance,
+      accuracy,
+      confidence,
       laneSupport,
       scoring,
       sdSavingsPaths,
@@ -1438,6 +3264,7 @@
     const winningDevice = winnerSide === "left" ? leftDevice : winnerSide === "right" ? rightDevice : null;
     const differentLane = getComparisonClass(leftDevice) !== getComparisonClass(rightDevice);
     const verdict = getDirectCompareVerdict(leftPoints, rightPoints, differentLane);
+    const confidence = analyzeCompareConfidence(leftDevice, rightDevice, differentLane);
 
     return {
       mode: "compated",
@@ -1448,6 +3275,7 @@
       winningDevice,
       differentLane,
       verdict,
+      confidence,
       metrics,
       headline: buildDirectCompareHeadline(winnerSide, winningDevice, leftDevice, rightDevice),
       summary: buildDirectCompareSummary(winnerSide, leftDevice, rightDevice, differentLane),
@@ -1464,7 +3292,48 @@
   }
 
   function buildDirectCompareMetrics(leftDevice, rightDevice) {
-    return [
+    const leftTraits = getDeviceTraitProfile(leftDevice);
+    const rightTraits = getDeviceTraitProfile(rightDevice);
+    const metrics = [];
+    const selectedBreakdown = buildSelectedSystemBreakdown();
+    let formFactorMetric = {
+      label: "Form Factor",
+      leftValue: formatFormFactorLabel(leftDevice.formFactor),
+      rightValue: formatFormFactorLabel(rightDevice.formFactor),
+      winner: "tie",
+      weight: 0,
+      note: "Shape is preference driven, so this row does not pick a winner."
+    };
+
+    if (selectedBreakdown.length) {
+      const leftCompatibility = getLibraryCompatibilitySummary(leftDevice, selectedBreakdown);
+      const rightCompatibility = getLibraryCompatibilitySummary(rightDevice, selectedBreakdown);
+      const leftFormFactorSummary = getLibraryFormFactorSummary(leftCompatibility);
+      const rightFormFactorSummary = getLibraryFormFactorSummary(rightCompatibility);
+      metrics.push({
+        label: "Selected Library",
+        leftValue: formatFitScore(leftCompatibility.ratio * 100),
+        rightValue: formatFitScore(rightCompatibility.ratio * 100),
+        winner: compareNumericLead(leftCompatibility.ratio, rightCompatibility.ratio),
+        weight: 3,
+        note: "Current selected systems with screen, controls, touch, software, and form factor counted when relevant."
+      });
+
+      formFactorMetric = {
+        label: "Form Factor",
+        leftValue: formatFormFactorLabel(leftDevice.formFactor),
+        rightValue: formatFormFactorLabel(rightDevice.formFactor),
+        winner: leftFormFactorSummary && rightFormFactorSummary
+          ? compareNumericLead(leftFormFactorSummary.ratio, rightFormFactorSummary.ratio)
+          : "tie",
+        weight: leftFormFactorSummary && rightFormFactorSummary ? 2 : 0,
+        note: leftFormFactorSummary && rightFormFactorSummary
+          ? "Current selected systems care about clamshell or dual screen shape, so form factor can break the tie."
+          : "Shape is preference driven, so this row does not pick a winner."
+      };
+    }
+
+    metrics.push(
       {
         label: "Power Tier",
         leftValue: getComputeFloorLabel(leftDevice.computeRank),
@@ -1490,13 +3359,52 @@
         note: "Internal storage only."
       },
       {
-        label: "Form Factor",
-        leftValue: formatFormFactorLabel(leftDevice.formFactor),
-        rightValue: formatFormFactorLabel(rightDevice.formFactor),
-        winner: "tie",
-        weight: 0,
-        note: "Shape is preference driven, so this row does not pick a winner."
+        label: "Screen",
+        leftValue: formatDeviceScreenLabel(leftDevice),
+        rightValue: formatDeviceScreenLabel(rightDevice),
+        winner: compareNumericLead(
+          (leftTraits.bigScreen + leftTraits.retroScreen + leftTraits.dualScreen) / 3,
+          (rightTraits.bigScreen + rightTraits.retroScreen + rightTraits.dualScreen) / 3
+        ),
+        weight: 2,
+        note: "General screen utility for mixed handheld use."
       },
+      {
+        label: "Controls",
+        leftValue: formatDeviceControlLabel(leftDevice),
+        rightValue: formatDeviceControlLabel(rightDevice),
+        winner: compareNumericLead(
+          (leftTraits.sticks + leftTraits.dpad) / 2,
+          (rightTraits.sticks + rightTraits.dpad) / 2
+        ),
+        weight: 2,
+        note: "General control flexibility, not one genre only."
+      },
+      {
+        label: "Portability",
+        leftValue: leftTraits.portability >= 0.75 ? "Easy carry" : leftTraits.portability >= 0.55 ? "Mid carry" : "Larger carry",
+        rightValue: rightTraits.portability >= 0.75 ? "Easy carry" : rightTraits.portability >= 0.55 ? "Mid carry" : "Larger carry",
+        winner: compareNumericLead(leftTraits.portability, rightTraits.portability),
+        weight: 1,
+        note: "Higher portability means easier day to day carry."
+      },
+      {
+        label: "Battery Fit",
+        leftValue: leftTraits.battery >= 0.78 ? "Strong" : leftTraits.battery >= 0.62 ? "Good" : "Average",
+        rightValue: rightTraits.battery >= 0.78 ? "Strong" : rightTraits.battery >= 0.62 ? "Good" : "Average",
+        winner: compareNumericLead(leftTraits.battery, rightTraits.battery),
+        weight: 1,
+        note: "Directional long session comfort only."
+      },
+      {
+        label: "Software Fit",
+        leftValue: formatDeviceSoftwareLabel(leftDevice),
+        rightValue: formatDeviceSoftwareLabel(rightDevice),
+        winner: compareNumericLead(leftTraits.software, rightTraits.software),
+        weight: 1,
+        note: "Directional maturity estimate from the profile layer."
+      },
+      formFactorMetric,
       {
         label: "Live Price",
         leftValue: getComparisonPriceLabel(leftDevice),
@@ -1505,7 +3413,9 @@
         weight: 1,
         note: "Lower live price wins when both prices exist."
       }
-    ];
+    );
+
+    return metrics;
   }
 
   function compareNumericLead(leftValue, rightValue) {
@@ -1581,9 +3491,26 @@
 
   function buildDirectCompareNotes(leftDevice, rightDevice, metrics, winnerSide, differentLane) {
     const notes = [];
+    const libraryMetric = metrics.find((metric) => metric.label === "Selected Library");
     const powerMetric = metrics.find((metric) => metric.label === "Power Tier");
     const ramMetric = metrics.find((metric) => metric.label === "RAM");
+    const formFactorMetric = metrics.find((metric) => metric.label === "Form Factor");
     const priceMetric = metrics.find((metric) => metric.label === "Live Price");
+    const selectedBreakdown = buildSelectedSystemBreakdown();
+
+    if (libraryMetric && libraryMetric.winner !== "tie") {
+      const libraryLeader = libraryMetric.winner === "left" ? leftDevice : rightDevice;
+      notes.push(`${libraryLeader.name} fits your currently selected systems more cleanly.`);
+    }
+
+    if (formFactorMetric && formFactorMetric.weight > 0 && formFactorMetric.winner !== "tie") {
+      const formFactorLeader = formFactorMetric.winner === "left" ? leftDevice : rightDevice;
+      if (selectedBreakdown.some((entry) => entry.id === "ds" || entry.id === "3ds")) {
+        notes.push(`${formFactorLeader.name} fits DS or 3DS more naturally because the form factor is closer to a true dual screen layout.`);
+      } else {
+        notes.push(`${formFactorLeader.name} matches your selected library's form factor needs more naturally.`);
+      }
+    }
 
     if (powerMetric && powerMetric.winner !== "tie") {
       const powerLeader = powerMetric.winner === "left" ? leftDevice : rightDevice;
@@ -1829,7 +3756,7 @@
     };
   }
 
-  function scoreDevices(breakdown, storage, performance) {
+  function scoreDevices(breakdown, storage, performance, accuracy) {
     const dualScreenNeed = calculateDualScreenNeed(breakdown);
     const budgetWeight = (100 - state.futureProofBias) / 100;
     const futureWeight = state.futureProofBias / 100;
@@ -1921,6 +3848,10 @@
         cautions.push(currentStoreStorageAdjustment.note);
       }
 
+      const experienceNotes = buildExperienceNotes(getExperienceFitBreakdown(device, accuracy));
+      experienceNotes.positives.forEach((note) => strengths.push(note));
+      experienceNotes.cautions.forEach((note) => cautions.push(note));
+
       const clearsCoreFloor = device.computeRank >= performance.computeFloorRank
         && device.ram >= performance.minimumRam;
       const preferenceWeight = clearsCoreFloor ? 1.4 : 1;
@@ -2009,18 +3940,29 @@
         device,
         storage,
         performance,
+        accuracy,
         totalStoragePool,
         dualScreenNeed,
         budgetWeight,
         futureWeight,
-        priceContext
+        priceContext,
+        breakdown
       );
+      const compatibilityStrength = buildCompatibilityStrengthLine(fitBreakdown.compatibility);
+      const compatibilityCaution = buildCompatibilityCautionLine(fitBreakdown.compatibility);
+      if (compatibilityStrength) {
+        strengths.push(compatibilityStrength);
+      }
+      if (compatibilityCaution) {
+        cautions.push(compatibilityCaution);
+      }
 
       return {
         device,
         score: fitBreakdown.total,
         rankScore,
         fitBreakdown,
+        compatibility: fitBreakdown.compatibility,
         strengths: dedupeStrings(strengths).slice(0, 4),
         cautions: dedupeStrings(cautions).slice(0, 4),
         meetsMinimumCore,
@@ -2060,24 +4002,30 @@
     };
   }
 
-  function buildFitScoreBreakdown(device, storage, performance, totalStoragePool, dualScreenNeed, budgetWeight, futureWeight, priceContext) {
-    const performanceScore = getPerformanceFitPoints(device, performance, budgetWeight, futureWeight);
+  function buildFitScoreBreakdown(device, storage, performance, accuracy, totalStoragePool, dualScreenNeed, budgetWeight, futureWeight, priceContext, breakdown) {
+    const performanceBreakdown = getPerformanceFitPoints(device, performance, budgetWeight, futureWeight, breakdown);
+    const performanceScore = performanceBreakdown.total;
     const ramScore = getRamFitPoints(device, performance, budgetWeight, futureWeight);
     const storageScore = getStorageFitPoints(device, storage, performance, totalStoragePool);
     const valueScore = getValueFitPoints(device, performance, budgetWeight, futureWeight, priceContext);
     const preferenceScore = getPreferenceFitPoints(device, dualScreenNeed);
+    const experienceScore = getExperienceFitBreakdown(device, accuracy).total;
     const total = RULES.clamp(
-      performanceScore + ramScore + storageScore + valueScore + preferenceScore,
+      performanceScore + ramScore + storageScore + valueScore + preferenceScore + experienceScore,
       0,
       100
     );
 
     return {
       performance: performanceScore,
+      performanceBase: performanceBreakdown.base,
+      performanceCompatibility: performanceBreakdown.compatibilityScore,
+      compatibility: performanceBreakdown.compatibility,
       ram: ramScore,
       storage: storageScore,
       value: valueScore,
       preference: preferenceScore,
+      experience: experienceScore,
       total
     };
   }
@@ -2117,7 +4065,7 @@
 
     for (const sdCardSizeGb of sdOptions) {
       const hypotheticalStorage = { ...storage, sdCardSizeGb };
-      const hypotheticalScoring = scoreDevices(breakdown, hypotheticalStorage, performance);
+      const hypotheticalScoring = scoreDevices(breakdown, hypotheticalStorage, performance, analyzeAccuracy(breakdown));
       const cheaperCandidates = hypotheticalScoring.scored
         .filter((candidate) => {
           return candidate.device.priceUsd < currentDevice.priceUsd
@@ -2168,7 +4116,8 @@
       { key: "ram", value: fitBreakdown.ram, max: FIT_SCORE_WEIGHTS.ram },
       { key: "storage", value: fitBreakdown.storage, max: FIT_SCORE_WEIGHTS.storage },
       { key: "value", value: fitBreakdown.value, max: FIT_SCORE_WEIGHTS.value },
-      { key: "preference", value: fitBreakdown.preference, max: FIT_SCORE_WEIGHTS.preference }
+      { key: "preference", value: fitBreakdown.preference, max: FIT_SCORE_WEIGHTS.preference },
+      { key: "experience", value: fitBreakdown.experience, max: FIT_SCORE_WEIGHTS.experience }
     ].map((part) => ({
       ...part,
       points: Math.floor(part.value),
@@ -2203,6 +4152,7 @@
       storage: parts.find((part) => part.key === "storage").points,
       value: parts.find((part) => part.key === "value").points,
       preference: parts.find((part) => part.key === "preference").points,
+      experience: parts.find((part) => part.key === "experience").points,
       total: Math.round(fitBreakdown.total)
     };
   }
@@ -2235,7 +4185,7 @@
     };
   }
 
-  function getPerformanceFitPoints(device, performance, budgetWeight, futureWeight) {
+  function getBasePerformanceFitPoints(device, performance, budgetWeight, futureWeight) {
     const delta = device.computeRank - performance.computeFloorRank;
     const retroLiteModel = performance.fitModel === "retro-lite";
     if (delta < 0) {
@@ -2243,12 +4193,12 @@
     }
 
     if (delta === 0) {
-      return retroLiteModel ? 33 : 31;
+      return retroLiteModel ? 27 : 26;
     }
 
     if (delta === 1) {
       if (retroLiteModel) {
-        return RULES.clamp(30 + futureWeight - (budgetWeight * 3), 24, 31);
+        return RULES.clamp(27 + futureWeight - (budgetWeight * 3), 21, 29);
       }
 
       return FIT_SCORE_WEIGHTS.performance;
@@ -2256,17 +4206,39 @@
 
     if (retroLiteModel) {
       return RULES.clamp(
-        22 + futureWeight - (budgetWeight * Math.min(10, delta * 4)),
-        12,
-        24
+        20 + futureWeight - (budgetWeight * Math.min(8, delta * 3)),
+        10,
+        22
       );
     }
 
     return RULES.clamp(
-      33 + (futureWeight * 2) - (budgetWeight * Math.min(4, (delta - 1) * 2)),
-      28,
+      28 + (futureWeight * 1.5) - (budgetWeight * Math.min(5, (delta - 1) * 2.5)),
+      22,
       FIT_SCORE_WEIGHTS.performance
     );
+  }
+
+  function getPerformanceFitPoints(device, performance, budgetWeight, futureWeight, breakdown) {
+    const baseScore = getBasePerformanceFitPoints(device, performance, budgetWeight, futureWeight);
+    const compatibility = getLibraryCompatibilitySummary(device, breakdown);
+
+    if (baseScore <= 0 || !breakdown.length) {
+      return {
+        total: baseScore,
+        base: baseScore,
+        compatibilityScore: baseScore,
+        compatibility
+      };
+    }
+
+    const compatibilityScore = compatibility.ratio * FIT_SCORE_WEIGHTS.performance;
+    return {
+      total: RULES.clamp((baseScore * 0.62) + (compatibilityScore * 0.38), 0, FIT_SCORE_WEIGHTS.performance),
+      base: baseScore,
+      compatibilityScore,
+      compatibility
+    };
   }
 
   function getRamFitPoints(device, performance, budgetWeight, futureWeight) {
@@ -2292,15 +4264,15 @@
     const overshoot = device.ram - performance.recommendedRam;
     if (retroLiteModel) {
       return RULES.clamp(
-        24 - Math.min(14, overshoot * 1.5) + (futureWeight * 0.5) - (budgetWeight * Math.min(2, overshoot / 2)),
+        18 - Math.min(8, overshoot * 1.2) + (futureWeight * 0.5) - (budgetWeight * Math.min(2, overshoot / 2)),
         10,
         FIT_SCORE_WEIGHTS.ram
       );
     }
 
     return RULES.clamp(
-      24 - Math.min(3, overshoot / 4) + Math.min(1, futureWeight) - (budgetWeight * Math.min(1.5, overshoot / 16)),
-      21,
+      19 - Math.min(3, overshoot / 6) + Math.min(1, futureWeight) - (budgetWeight * Math.min(1.5, overshoot / 16)),
+      16,
       FIT_SCORE_WEIGHTS.ram
     );
   }
@@ -2538,12 +4510,17 @@
     }
 
     const recommendedName = analysis.keepCurrent && analysis.currentComparison
-      ? `Keep ${analysis.currentComparison.currentDevice.name}`
-      : analysis.scoring.recommended.device.name;
+      ? `Keep ${formatDeviceDisplayName(analysis.currentComparison.currentDevice)}`
+      : formatDeviceDisplayName(analysis.scoring.recommended.device);
     const snapshotPriceLabel = getRecommendedPriceLabel(analysis, analysis.scoring.recommended.device);
     const snapshotPriceCopy = getRecommendedPriceCopy(analysis, analysis.scoring.recommended.device);
     const computeLabel = RULES.getTierByRank(analysis.performance.computeFloorRank).label;
     const ramLabel = formatRamTierLabel(analysis.performance.recommendedRamRank, analysis.performance.fitModel);
+    const snapshotDevice = analysis.keepCurrent && analysis.currentComparison
+      ? analysis.currentComparison.currentDevice
+      : analysis.scoring.recommended.device;
+    const experienceBreakdown = getExperienceFitBreakdown(snapshotDevice, analysis.accuracy);
+    const experienceLabel = formatFitScore((experienceBreakdown.total / FIT_SCORE_WEIGHTS.experience) * 100);
 
     elements.snapshotCards.innerHTML = `
       <div class="snapshot-card">
@@ -2553,6 +4530,22 @@
         </div>
         <div class="kpi">${escapeHtml(recommendedName)}</div>
         <div class="result-copy">Based on your current inputs, this is the cleanest fit without overspending on unused headroom.</div>
+      </div>
+      <div class="snapshot-card">
+        <div class="summary-card-top">
+          <h3>Experience Fit</h3>
+          <span class="mini-tag">${escapeHtml(experienceLabel)}</span>
+        </div>
+        <div class="kpi">${escapeHtml(formatDeviceExperienceLabel(snapshotDevice))}</div>
+        <div class="result-copy">${escapeHtml(analysis.accuracy.summary)}</div>
+      </div>
+      <div class="snapshot-card">
+        <div class="summary-card-top">
+          <h3>Confidence</h3>
+          <span class="mini-tag">${Math.round(analysis.confidence.score)}%</span>
+        </div>
+        <div class="kpi">${escapeHtml(analysis.confidence.label)}</div>
+        <div class="result-copy">${escapeHtml(analysis.confidence.summary)}</div>
       </div>
       <div class="snapshot-card">
         <div class="summary-card-top">
@@ -2591,8 +4584,11 @@
 
   function renderSimpleSnapshot(analysis) {
     const recommendedName = analysis.keepCurrent && analysis.currentComparison
-      ? `Keep ${analysis.currentComparison.currentDevice.name}`
-      : analysis.scoring.recommended.device.name;
+      ? `Keep ${formatDeviceDisplayName(analysis.currentComparison.currentDevice)}`
+      : formatDeviceDisplayName(analysis.scoring.recommended.device);
+    const snapshotDevice = analysis.keepCurrent && analysis.currentComparison
+      ? analysis.currentComparison.currentDevice
+      : analysis.scoring.recommended.device;
     const snapshotPriceLabel = getRecommendedPriceLabel(analysis, analysis.scoring.recommended.device);
     const snapshotPriceCopy = getRecommendedPriceCopy(analysis, analysis.scoring.recommended.device);
 
@@ -2602,6 +4598,8 @@
         ${renderSimpleExplorerPath(["Where2Buy", "Snapshot", "At a Glance"])}
         ${renderSimpleTerminalSection("At a Glance", [
           ["Best Fit", recommendedName],
+          ["Experience Fit", formatFitScore((getExperienceFitBreakdown(snapshotDevice, analysis.accuracy).total / FIT_SCORE_WEIGHTS.experience) * 100)],
+          ["Confidence", analysis.confidence.label],
           ["Price", snapshotPriceLabel],
           ["RAM Target", `${analysis.performance.recommendedRam}GB`],
           ["Storage Avg", formatSize(analysis.storage.expectedAverage)],
@@ -2646,6 +4644,7 @@
     const winnerCopy = analysis.winnerSide === "tie"
       ? "No clear winner"
       : `${analysis.winningDevice.name} leads`;
+    const compareNotes = [analysis.confidence.summary, ...analysis.notes].filter(Boolean);
 
     elements.resultsContent.innerHTML = `
       <div class="scorecard-story">
@@ -2659,7 +4658,7 @@
             <div class="story-burst">
               <span class="story-burst-label">Verdict</span>
               <strong class="story-burst-value">${escapeHtml(winnerCopy)}</strong>
-              <span class="story-burst-copy">${escapeHtml(analysis.verdict)}</span>
+              <span class="story-burst-copy">${escapeHtml(analysis.confidence.label)} | ${escapeHtml(analysis.verdict)}</span>
             </div>
           </div>
         </section>
@@ -2672,6 +4671,7 @@
             </div>
             <div class="story-chip-row">
               <span class="story-chip">${escapeHtml(analysis.verdict)}</span>
+              <span class="story-chip">${escapeHtml(analysis.confidence.label)}</span>
             </div>
           </div>
           <div class="story-choice-grid">
@@ -2698,9 +4698,12 @@
               <p class="story-step">Notes</p>
               <h3>What stands out</h3>
             </div>
+            <div class="story-chip-row">
+              <span class="story-chip">${Math.round(analysis.confidence.score)}% confidence</span>
+            </div>
           </div>
           <div class="story-list">
-            ${analysis.notes.map((note) => `<div>${escapeHtml(note)}</div>`).join("")}
+            ${compareNotes.map((note) => `<div>${escapeHtml(note)}</div>`).join("")}
           </div>
         </section>
       </div>
@@ -2708,6 +4711,7 @@
   }
 
   function renderSimpleCompareResults(analysis) {
+    const compareNotes = [analysis.confidence.summary, ...analysis.notes].filter(Boolean);
     elements.resultsContent.innerHTML = `
       <div class="simple-terminal simple-terminal-full">
         <div class="simple-terminal-head">File Explorer</div>
@@ -2715,6 +4719,7 @@
         ${renderSimpleTerminalSection("Compare", [
           ["Headline", analysis.headline],
           ["Verdict", analysis.verdict],
+          ["Confidence", analysis.confidence.label],
           ["Left Device", analysis.leftDevice.name],
           ["Right Device", analysis.rightDevice.name]
         ])}
@@ -2723,7 +4728,7 @@
         }))}
         <section class="simple-terminal-section">
           <h3 class="simple-terminal-title">Notes</h3>
-          ${renderSimpleTerminalNotes(analysis.notes)}
+          ${renderSimpleTerminalNotes(compareNotes)}
         </section>
       </div>
     `;
@@ -2736,13 +4741,17 @@
     return `
       <article class="story-choice-card${accentClass}">
         <span class="story-choice-label">${escapeHtml(title)}</span>
-        <h4>${escapeHtml(device.name)}</h4>
+        <h4>${escapeHtml(formatDeviceDisplayName(device))}</h4>
         <div class="story-chip-row">
           <span class="story-chip story-chip-accent">${escapeHtml(getBrandName(getDeviceBrandId(device)))}</span>
           <span class="story-chip">${escapeHtml(getComparisonClassLabel(getComparisonClass(device)))}</span>
           <span class="story-chip">${escapeHtml(formatFormFactorLabel(device.formFactor))}</span>
+          <span class="story-chip">${escapeHtml(formatDeviceScreenLabel(device))}</span>
+          <span class="story-chip">${escapeHtml(formatDeviceControlLabel(device))}</span>
+          <span class="story-chip">${escapeHtml(formatDeviceSoftwareLabel(device))}</span>
           <span class="story-chip">${device.ram}GB RAM</span>
           <span class="story-chip">${formatSize(device.storage)} storage</span>
+          ${renderDeviceFeatureChips(device, 2)}
           <span class="story-chip">${escapeHtml(getComparisonPriceLabel(device))}</span>
         </div>
         ${accuracyNote ? `<p class="story-choice-copy">${escapeHtml(accuracyNote)}</p>` : `<p class="story-choice-copy">Live pool device with direct sheet data.</p>`}
@@ -2819,8 +4828,8 @@
       ? analysis.currentComparison.currentDevice
       : recommendedDevice;
     const recommendedTitle = analysis.keepCurrent && analysis.currentComparison
-      ? `Keep your current ${analysis.currentComparison.currentDevice.name}`
-      : recommendedDevice.name;
+      ? `Keep your current ${formatDeviceDisplayName(analysis.currentComparison.currentDevice)}`
+      : formatDeviceDisplayName(recommendedDevice);
     const recommendedBody = analysis.keepCurrent && analysis.currentComparison
       ? `${analysis.currentComparison.currentDevice.name} already covers your current needs well enough. If you still want to buy a new device, ${recommendedDevice.name} is the closest current fit.`
       : buildRecommendedBody(analysis, recommendedCandidate);
@@ -2833,6 +4842,8 @@
     const scoreBreakdown = buildDisplayScoreBreakdown(recommendedCandidate.fitBreakdown);
     const priceLabel = getRecommendedPriceLabel(analysis, recommendedDevice);
     const priceCopy = getRecommendedPriceCopy(analysis, recommendedDevice);
+    const experienceBreakdown = getExperienceFitBreakdown(displayDevice, analysis.accuracy);
+    const experiencePercent = (experienceBreakdown.total / FIT_SCORE_WEIGHTS.experience) * 100;
 
     if (state.format === "simple") {
       renderSimpleResults(analysis, {
@@ -2866,10 +4877,16 @@
                 <span class="story-chip story-chip-accent">${escapeHtml(getBrandName(getDeviceBrandId(displayDevice)))}</span>
                 <span class="story-chip">${escapeHtml(displayDevice.family || displayDevice.name)}</span>
                 <span class="story-chip">${escapeHtml(formatFormFactorLabel(displayDevice.formFactor))}</span>
+                <span class="story-chip">${escapeHtml(formatDeviceExperienceLabel(displayDevice))}</span>
+                <span class="story-chip">${escapeHtml(formatDeviceScreenLabel(displayDevice))}</span>
+                <span class="story-chip">${escapeHtml(formatDeviceControlLabel(displayDevice))}</span>
+                <span class="story-chip">${escapeHtml(formatDeviceSoftwareLabel(displayDevice))}</span>
                 <span class="story-chip">${displayDevice.ram}GB RAM</span>
                 <span class="story-chip">${formatSize(displayDevice.storage)} storage</span>
                 ${displayDevice.storageSpec ? `<span class="story-chip">${escapeHtml(displayDevice.storageSpec)}</span>` : ""}
+                ${renderDeviceFeatureChips(displayDevice, 3)}
                 <span class="story-chip">${escapeHtml(priceLabel)}</span>
+                ${getDeviceTraitProfile(displayDevice).touch ? `<span class="story-chip">Touch</span>` : ""}
                 ${displayDevice.preOrder ? `<span class="story-chip">Pre-order</span>` : ""}
               </div>
               ${preferenceCopy ? `<p class="story-subnote">${escapeHtml(preferenceCopy)}</p>` : ""}
@@ -2887,6 +4904,8 @@
 
         <section class="story-metric-strip">
           ${renderStoryMetricCard("Price", priceLabel, priceCopy)}
+          ${renderStoryMetricCard("Experience Fit", formatFitScore(experiencePercent), analysis.accuracy.summary)}
+          ${renderStoryMetricCard("Confidence", analysis.confidence.label, analysis.confidence.summary)}
           ${renderStoryMetricCard("Recommended RAM", `${analysis.performance.recommendedRam}GB`, buildRamExplanation(analysis.performance))}
           ${renderStoryMetricCard("Minimum RAM", `${analysis.performance.minimumRam}GB`, "This is the lowest tier that still makes sense.")}
               ${renderStoryMetricCard("Expected Storage", formatSize(analysis.storage.expectedAverage), buildStorageNote(analysis.storage))}
@@ -2916,6 +4935,7 @@
               ${renderStoryMeterCard("Performance headroom", performancePercent, `The device clears a ${getComputeFloorLabel(analysis.performance.computeFloorRank).toLowerCase()} requirement.`)}
               ${renderStoryMeterCard("RAM fit", ramPercent, `Target is ${analysis.performance.recommendedRam}GB. Minimum acceptable is ${analysis.performance.minimumRam}GB.`)}
               ${renderStoryMeterCard("Storage comfort", storagePercent, `Comfort target is ${formatSize(analysis.storage.comfortableUpper)} and the current storage pool is ${formatSize(getDeviceStoragePool(displayDevice, analysis.storage))}.`)}
+              ${renderStoryMeterCard("Experience fit", experiencePercent, analysis.accuracy.summary)}
             </div>
           </div>
         </section>
@@ -2976,8 +4996,8 @@
   function renderSimpleResults(analysis, context) {
     const comparisonSection = analysis.currentComparison
       ? renderSimpleTerminalSection("Current Device Check", [
-        ["Current Device", analysis.currentComparison.currentDevice.name],
-        ["Recommended", analysis.currentComparison.recommendedDevice.name],
+        ["Current Device", formatDeviceDisplayName(analysis.currentComparison.currentDevice)],
+        ["Recommended", formatDeviceDisplayName(analysis.currentComparison.recommendedDevice)],
         ["Upgrade Level", capitalizeWords(analysis.currentComparison.classification)]
       ]) + renderSimpleTerminalNotes([analysis.currentComparison.explanation])
       : "";
@@ -2998,10 +5018,12 @@
       <div class="simple-terminal simple-terminal-full">
         <div class="simple-terminal-head">File Explorer</div>
         <div class="simple-terminal-head">Which Handheld Should I Buy? [Version ${APP_VERSION}]</div>
-        ${renderSimpleExplorerPath(["Where2Buy", "Recommendations", "Simple", getBrandName(getDeviceBrandId(context.recommendedDevice)), context.recommendedDevice.family || context.recommendedDevice.name])}
+        ${renderSimpleExplorerPath(["Where2Buy", "Recommendations", "Simple", getBrandName(getDeviceBrandId(context.recommendedDevice)), formatDeviceDisplayName(context.recommendedDevice)])}
         <div class="simple-terminal-command">Folder Summary</div>
         ${renderSimpleTerminalSection("Recommendation Configuration", [
           ["Best Fit", context.recommendedTitle],
+          ["Experience Fit", formatFitScore((getExperienceFitBreakdown(context.displayDevice, analysis.accuracy).total / FIT_SCORE_WEIGHTS.experience) * 100)],
+          ["Confidence", analysis.confidence.label],
           ["Price", context.priceLabel],
           ["Recommended RAM", `${analysis.performance.recommendedRam}GB`],
           ["Minimum RAM", `${analysis.performance.minimumRam}GB`],
@@ -3022,6 +5044,7 @@
           ["Storage", `${context.scoreBreakdown.storage}/${FIT_SCORE_WEIGHTS.storage}`],
           ["Price vs Value", `${context.scoreBreakdown.value}/${FIT_SCORE_WEIGHTS.value}`],
           ["Preferences", `${context.scoreBreakdown.preference}/${FIT_SCORE_WEIGHTS.preference}`],
+          ["Experience", `${context.scoreBreakdown.experience}/${FIT_SCORE_WEIGHTS.experience}`],
           ["Total Score", `${context.scoreBreakdown.total}/100`]
         ])}
         ${renderSimpleTerminalSection("Library Loadout", analysis.breakdown.map((entry) => {
@@ -3120,11 +5143,14 @@
     const systemSummary = analysis.headlineSystems.join(", ");
     const storageSummary = `your expected storage lands around ${formatSize(analysis.storage.expectedAverage)}`;
     const ramSummary = `the recommended RAM tier is ${analysis.performance.recommendedRam}GB`;
+    const accuracySummary = analysis.accuracy.primarySignals.length
+      ? `the accuracy layer is leaning toward ${formatJoinedList(analysis.accuracy.primarySignals)}`
+      : "the accuracy layer stays balanced";
     if (analysis.fitModel === "retro-lite") {
-      return `${recommendedCandidate.device.name} lands on top because it fits ${systemSummary || "your selected mix"}, keeps the storage target around ${formatSize(analysis.storage.expectedAverage)}, and does not waste money on heavier Android style headroom you do not need here.`;
+      return `${recommendedCandidate.device.name} lands on top because it fits ${systemSummary || "your selected mix"}, keeps the storage target around ${formatSize(analysis.storage.expectedAverage)}, ${accuracySummary}, and does not waste money on heavier Android style headroom you do not need here.`;
     }
 
-    return `${recommendedCandidate.device.name} lands on top because it fits ${systemSummary || "your selected mix"}, ${storageSummary}, and ${ramSummary} without drifting too far into overkill.`;
+    return `${recommendedCandidate.device.name} lands on top because it fits ${systemSummary || "your selected mix"}, ${storageSummary}, ${ramSummary}, and ${accuracySummary} without drifting too far into overkill.`;
   }
 
   function buildStoryHeadline(analysis, recommendedCandidate, displayDevice) {
@@ -3144,6 +5170,10 @@
       return `${recommendedCandidate.device.name} clears the hard requirements and your preference mix helped decide the final pick.`;
     }
 
+    if (analysis.accuracy.primarySignals.length) {
+      return `${recommendedCandidate.device.name} clears the hard requirements and the accuracy pass lined it up well with ${formatJoinedList(analysis.accuracy.primarySignals)}.`;
+    }
+
     if (state.brandPreference !== "any") {
       return `${recommendedCandidate.device.name} clears the hard requirements and lines up well with your ${getBrandName(state.brandPreference)} preference.`;
     }
@@ -3158,6 +5188,10 @@
   function buildStoryStamp(analysis) {
     if (analysis.keepCurrent) {
       return "No rush to upgrade";
+    }
+
+    if (analysis.confidence.score < 60) {
+      return "Watch caveats";
     }
 
     if (analysis.scoring.preferenceApplied) {
@@ -3201,7 +5235,7 @@
       const savingsText = path.savingsUsd > 0
         ? ` (${usdFormatter.format(path.savingsUsd)} less)`
         : "";
-      return [label, `${path.candidate.device.name} + ${formatSdCardSize(path.sdCardSizeGb)} SD${savingsText}`];
+      return [label, `${formatDeviceDisplayName(path.candidate.device)} + ${formatSdCardSize(path.sdCardSizeGb)} SD${savingsText}`];
     });
   }
 
@@ -3215,7 +5249,7 @@
         ? ` and could save about ${usdFormatter.format(path.savingsUsd)}`
         : "";
 
-      return `Because a large part of this library is SD friendly, a ${formatSdCardSize(path.sdCardSizeGb)} SD card could bring you down to ${path.candidate.device.name}${savingsText}.`;
+      return `Because a large part of this library is SD friendly, a ${formatSdCardSize(path.sdCardSizeGb)} SD card could bring you down to ${formatDeviceDisplayName(path.candidate.device)}${savingsText}.`;
     });
   }
 
@@ -3237,7 +5271,7 @@
           ${sdSavingsPaths.map((path) => `
             <div class="story-sd-saver-row">
               <span>${escapeHtml(formatSdCardSize(path.sdCardSizeGb))}</span>
-              <span>${escapeHtml(path.candidate.device.name)}</span>
+              <span>${escapeHtml(formatDeviceDisplayName(path.candidate.device))}</span>
               <span>${escapeHtml(usdFormatter.format(path.savingsUsd))}</span>
             </div>
           `).join("")}
@@ -3316,7 +5350,7 @@
         <div class="story-choice-grid">
           <article class="story-choice-card">
             <span class="story-choice-label">Current</span>
-            <h4>${escapeHtml(comparison.currentDevice.name)}</h4>
+            <h4>${escapeHtml(formatDeviceDisplayName(comparison.currentDevice))}</h4>
             <div class="story-chip-row">
               <span class="story-chip">${comparison.currentDevice.ram}GB RAM</span>
               <span class="story-chip">${formatSize(comparison.currentDevice.storage)} storage</span>
@@ -3324,7 +5358,7 @@
           </article>
           <article class="story-choice-card story-choice-card-accent">
             <span class="story-choice-label">Recommended</span>
-            <h4>${escapeHtml(comparison.recommendedDevice.name)}</h4>
+            <h4>${escapeHtml(formatDeviceDisplayName(comparison.recommendedDevice))}</h4>
             <div class="story-chip-row">
               <span class="story-chip">${comparison.recommendedDevice.ram}GB RAM</span>
               <span class="story-chip">${formatSize(comparison.recommendedDevice.storage)} storage</span>
@@ -3344,11 +5378,12 @@
     return `
       <article class="story-choice-card">
         <span class="story-choice-label">${escapeHtml(title)}</span>
-        <h4>${escapeHtml(candidate.device.name)}</h4>
+        <h4>${escapeHtml(formatDeviceDisplayName(candidate.device))}</h4>
         <div class="story-chip-row">
           <span class="story-chip story-chip-accent">${candidate.device.ram}GB RAM</span>
           <span class="story-chip">${formatSize(candidate.device.storage)} storage</span>
           ${candidate.device.storageSpec ? `<span class="story-chip">${escapeHtml(candidate.device.storageSpec)}</span>` : ""}
+          ${renderDeviceFeatureChips(candidate.device, 1)}
           ${candidate.device.preOrder ? `<span class="story-chip">Pre-order</span>` : ""}
         </div>
         <p class="story-choice-copy">${escapeHtml(subtitle)}</p>
@@ -3367,11 +5402,12 @@
             <span class="story-rank-index">0${index + 1}</span>
             <strong class="story-rank-score">${formatFitScore(candidate.score)}</strong>
           </div>
-        <h4>${escapeHtml(candidate.device.name)}</h4>
+        <h4>${escapeHtml(formatDeviceDisplayName(candidate.device))}</h4>
         <div class="story-chip-row">
           <span class="story-chip">${candidate.device.ram}GB RAM</span>
           <span class="story-chip">${formatSize(candidate.device.storage)} storage</span>
           ${candidate.device.storageSpec ? `<span class="story-chip">${escapeHtml(candidate.device.storageSpec)}</span>` : ""}
+          ${renderDeviceFeatureChips(candidate.device, 1)}
           ${candidate.device.preOrder ? `<span class="story-chip">Pre-order</span>` : ""}
         </div>
         <p class="story-rank-copy">${escapeHtml(candidate.strengths[0] || "Solid overall fit.")}</p>
@@ -3433,6 +5469,9 @@
     if (analysis.fitModel === "retro-lite") {
       lines.push("This library stays in the lighter retro fit model, so RAM and storage checks are scaled for SD first retro handhelds instead of heavier Android overhead.");
     }
+    if (analysis.accuracy.primarySignals.length) {
+      lines.push(`Accuracy inputs are currently leaning toward ${formatJoinedList(analysis.accuracy.primarySignals)}.`);
+    }
     if (state.useCaseLane !== "any") {
       if (state.formFactor !== "no-preference") {
         lines.push(`${getUseCaseLaneName(state.useCaseLane)} is active, but ${formatFormFactorLabel(state.formFactor).toLowerCase()} stays a hard pool filter when it is selected.`);
@@ -3462,6 +5501,21 @@
       lines.push("You leaned toward future proofing, so the scoring gives a little more credit to useful headroom when the fit is close.");
     } else if (state.futureProofBias <= 30) {
       lines.push("You leaned toward budget, so the scoring is stricter about paying for headroom you may never use.");
+    }
+
+    if (analysis.scoring.recommended && analysis.scoring.recommended.compatibility) {
+      const compatibilityStrength = buildCompatibilityStrengthLine(analysis.scoring.recommended.compatibility);
+      const compatibilityCaution = buildCompatibilityCautionLine(analysis.scoring.recommended.compatibility);
+      if (compatibilityStrength) {
+        lines.push(`Compatibility note: ${compatibilityStrength}`);
+      }
+      if (compatibilityCaution) {
+        lines.push(`Compatibility note: ${compatibilityCaution}`);
+      }
+    }
+
+    if (analysis.confidence.notes.length) {
+      lines.push(`Confidence note: ${analysis.confidence.notes[0]}`);
     }
 
     return lines;
@@ -3545,7 +5599,7 @@
           <div>
             <h3>${escapeHtml(title)}</h3>
             <div class="tag-row">
-              <span class="tag is-accent">${escapeHtml(candidate.device.name)}</span>
+              <span class="tag is-accent">${escapeHtml(formatDeviceDisplayName(candidate.device))}</span>
               <span class="tag">${candidate.device.ram}GB RAM</span>
               <span class="tag">${formatSize(candidate.device.storage)} storage</span>
             </div>
@@ -3565,7 +5619,7 @@
         <div class="candidate-card">
         <div class="candidate-row">
           <div>
-            <h3>${escapeHtml(candidate.device.name)}</h3>
+            <h3>${escapeHtml(formatDeviceDisplayName(candidate.device))}</h3>
             <div class="mini-meta">
               <span class="mini-tag">${candidate.device.ram}GB</span>
               <span class="mini-tag">${formatSize(candidate.device.storage)}</span>
@@ -3761,7 +5815,7 @@
 
     const brandId = getDeviceBrandId(device);
 
-    if (brandId === "gpd" || brandId === "onexplayer") {
+    if (brandId === "gpd" || brandId === "onexplayer" || brandId === "asus" || brandId === "msi" || brandId === "valve") {
       return "windows-handheld";
     }
 
@@ -3801,7 +5855,7 @@
       return usdFormatter.format(price);
     }
 
-    return device && device.inLivePool ? "Price unavailable" : "No live price";
+    return device && livePoolDeviceIds.has(device.id) ? "Price unavailable" : "No live price";
   }
 
   function getResolvedDeviceSelection(brandId, deviceId) {
@@ -3819,8 +5873,8 @@
       return {
         ...currentDevice,
         compareClass: getComparisonClass(currentDevice),
-        estimatedProfile: false,
-        inLivePool: recommendableDeviceIds.has(deviceId)
+        estimatedProfile: currentDevice.specConfidence === "profile",
+        inLivePool: livePoolDeviceIds.has(deviceId)
       };
     }
 
@@ -3844,7 +5898,8 @@
       estimatedProfile: true,
       inLivePool: false,
       available: false,
-      recommendable: false
+      recommendable: false,
+      specConfidence: "profile"
     };
   }
 
@@ -3854,7 +5909,11 @@
     }
 
     if (device.estimatedProfile) {
-      return `${device.name} is not in the live pool. This compare uses a family level estimate and data could be incorrect.`;
+      return `${device.name} is not in the live pool. This compare uses collected profile data and data could be incorrect.`;
+    }
+
+    if (device.catalogGenerated) {
+      return `${device.name} is not in the live pool. This compare uses collected sheet data and data could be incorrect.`;
     }
 
     return `${device.name} is not in the live pool. Current data could be incorrect.`;
@@ -3878,11 +5937,11 @@
     }
 
     if (state.currentDeviceId && deviceMap.has(state.currentDeviceId)) {
-      return deviceMap.get(state.currentDeviceId).name;
+      return formatDeviceDisplayName(deviceMap.get(state.currentDeviceId));
     }
 
     const ownedDevice = getOwnedDeviceById(state.currentBrand, state.currentDeviceId);
-    return ownedDevice ? ownedDevice.name : getBrandName(state.currentBrand);
+    return ownedDevice ? formatDeviceDisplayName(ownedDevice) : getBrandName(state.currentBrand);
   }
 
   function buildOwnershipNote(currentDevice, currentComparison) {
@@ -3902,6 +5961,10 @@
     }
 
     if (!currentDevice.inLivePool) {
+      if (currentDevice.catalogGenerated) {
+        return `Current handheld noted: ${getOwnedDeviceLabel()}. It is outside the live pool, so this uses collected sheet data and current data could be incorrect.`;
+      }
+
       return `Current handheld noted: ${getOwnedDeviceLabel()}. It is outside the live pool, so current data could be incorrect.`;
     }
 
@@ -4232,6 +6295,1670 @@
     return RULES.clamp(weight / 20, 0, 1);
   }
 
+  function getExperienceEntryWeight(entry) {
+    const usageWeights = {
+      primary: 1.1,
+      secondary: 0.82,
+      edge: 0.48,
+      none: 0.2
+    };
+    const usageWeight = usageWeights[entry.usageBand] || 0.55;
+    const countValue = Number.isFinite(entry.count) ? entry.count : Math.max(1, entry.effectiveCount || 1);
+    const libraryWeight = Math.min(1.7, 0.68 + Math.log10(countValue + 1));
+    return Math.max(0.45, (entry.performanceWeight * 0.26) * usageWeight * libraryWeight);
+  }
+
+  function normalizeWeightedTraits(traits, fallbackValue = 0.5) {
+    const weight = traits.weight || 0;
+    if (!weight) {
+      return {
+        screenBig: fallbackValue,
+        screenRetro: fallbackValue,
+        dualScreen: 0,
+        sticks: fallbackValue,
+        dpad: fallbackValue,
+        portability: fallbackValue,
+        battery: fallbackValue,
+        software: fallbackValue,
+        touch: 0,
+        confidenceRisk: 0.25
+      };
+    }
+
+    return {
+      screenBig: traits.screenBig / weight,
+      screenRetro: traits.screenRetro / weight,
+      dualScreen: traits.dualScreen / weight,
+      sticks: traits.sticks / weight,
+      dpad: traits.dpad / weight,
+      portability: traits.portability / weight,
+      battery: traits.battery / weight,
+      software: traits.software / weight,
+      touch: traits.touch / weight,
+      confidenceRisk: traits.confidenceRisk / weight
+    };
+  }
+
+  function applyAccuracyBiases(aggregate) {
+    let screenBig = aggregate.screenBig;
+    let screenRetro = aggregate.screenRetro;
+    let dualScreen = aggregate.dualScreen;
+    let sticks = aggregate.sticks;
+    let dpad = aggregate.dpad;
+    let portability = aggregate.portability;
+    let battery = aggregate.battery;
+    let software = aggregate.software;
+    let touch = aggregate.touch;
+
+    if (state.sessionStyle === "short") {
+      portability += 0.12;
+      battery -= 0.05;
+    } else if (state.sessionStyle === "long") {
+      battery += 0.18;
+      screenBig += 0.08;
+      portability -= 0.06;
+    }
+
+    if (state.portabilityPriority === "carry") {
+      portability += 0.16;
+      screenBig -= 0.04;
+    } else if (state.portabilityPriority === "pocket") {
+      portability += 0.28;
+      screenBig -= 0.08;
+    } else if (state.portabilityPriority === "desk") {
+      portability -= 0.16;
+      screenBig += 0.08;
+      battery += 0.05;
+    }
+
+    if (state.screenPriority === "big") {
+      screenBig += 0.3;
+      screenRetro -= 0.05;
+    } else if (state.screenPriority === "retro") {
+      screenRetro += 0.3;
+    } else if (state.screenPriority === "dual") {
+      dualScreen += 0.5;
+      screenBig += 0.08;
+    }
+
+    if (state.controlPriority === "sticks") {
+      sticks += 0.22;
+      dpad -= 0.05;
+    } else if (state.controlPriority === "dpad") {
+      dpad += 0.24;
+      sticks -= 0.06;
+    }
+
+    if (state.softwarePreference === "stable") {
+      software += 0.24;
+    } else if (state.softwarePreference === "tinker") {
+      software -= 0.12;
+    }
+
+    if (state.touchPreference === "required") {
+      touch = 1;
+    } else if (state.touchPreference === "avoid") {
+      touch = 0;
+    }
+
+    return {
+      screenBig: RULES.clamp(screenBig, 0, 1),
+      screenRetro: RULES.clamp(screenRetro, 0, 1),
+      dualScreen: RULES.clamp(dualScreen, 0, 1),
+      sticks: RULES.clamp(sticks, 0, 1),
+      dpad: RULES.clamp(dpad, 0, 1),
+      portability: RULES.clamp(portability, 0, 1),
+      battery: RULES.clamp(battery, 0, 1),
+      software: RULES.clamp(software, 0, 1),
+      touch: RULES.clamp(touch, 0, 1)
+    };
+  }
+
+  function getPrimaryAccuracySignals(accuracy) {
+    const candidates = [
+      { key: "screenBig", label: "larger screens" },
+      { key: "screenRetro", label: "retro friendly screens" },
+      { key: "dualScreen", label: "dual screen layouts" },
+      { key: "sticks", label: "stick heavy control layouts" },
+      { key: "dpad", label: "d-pad heavy control layouts" },
+      { key: "portability", label: "easy carry size" },
+      { key: "battery", label: "long session comfort" },
+      { key: "software", label: "software maturity" },
+      { key: "touch", label: "touch support" }
+    ];
+
+    return candidates
+      .map((entry) => ({ label: entry.label, value: accuracy.targets[entry.key] || 0 }))
+      .filter((entry) => entry.value >= 0.56)
+      .sort((left, right) => right.value - left.value)
+      .slice(0, 3)
+      .map((entry) => entry.label);
+  }
+
+  function buildAccuracySummary(accuracy) {
+    const topNeeds = getPrimaryAccuracySignals(accuracy);
+    if (!topNeeds.length) {
+      return "Accuracy layer stays balanced, so the recommendation leans more on core fit than on one special hardware trait.";
+    }
+
+    return `Accuracy layer is leaning toward ${formatJoinedList(topNeeds)}.`;
+  }
+
+  function analyzeAccuracy(breakdown) {
+    const totals = breakdown.reduce((result, entry) => {
+      const profile = SYSTEM_ACCURACY_PROFILES[entry.id] || SYSTEM_ACCURACY_PROFILES.default;
+      const weight = getExperienceEntryWeight(entry);
+      result.screenBig += profile.screenBig * weight;
+      result.screenRetro += profile.screenRetro * weight;
+      result.dualScreen += profile.dualScreen * weight;
+      result.sticks += profile.sticks * weight;
+      result.dpad += profile.dpad * weight;
+      result.portability += profile.portability * weight;
+      result.battery += profile.battery * weight;
+      result.software += profile.software * weight;
+      result.touch += profile.touch * weight;
+      result.confidenceRisk += profile.confidenceRisk * weight;
+      result.weight += weight;
+      return result;
+    }, {
+      screenBig: 0,
+      screenRetro: 0,
+      dualScreen: 0,
+      sticks: 0,
+      dpad: 0,
+      portability: 0,
+      battery: 0,
+      software: 0,
+      touch: 0,
+      confidenceRisk: 0,
+      weight: 0
+    });
+
+    const aggregate = normalizeWeightedTraits(totals);
+    const targets = applyAccuracyBiases(aggregate);
+
+    return {
+      aggregate,
+      targets,
+      summary: buildAccuracySummary({ aggregate, targets }),
+      primarySignals: getPrimaryAccuracySignals({ aggregate, targets }),
+      confidenceRisk: RULES.clamp(aggregate.confidenceRisk, 0, 1)
+    };
+  }
+
+  function getHeuristicDeviceTraitProfile(device) {
+    const familyText = `${device.id} ${device.family || ""} ${device.name || ""}`.toLowerCase();
+    const compareClass = getComparisonClass(device);
+    let traits = null;
+
+    if (compareClass === "windows-handheld") {
+      if (device.dualScreen) {
+        traits = { ...DEVICE_TRAIT_BASES.premiumDual };
+      } else if (familyText.includes("mini") || familyText.includes("win 4") || familyText.includes("air")) {
+        traits = { ...DEVICE_TRAIT_BASES.windowsCompact };
+      } else {
+        traits = { ...DEVICE_TRAIT_BASES.windowsHandheld };
+      }
+    } else if (compareClass === "cloud-streaming") {
+      traits = { ...DEVICE_TRAIT_BASES.cloudLarge };
+    } else if (device.dualScreen) {
+      traits = { ...(device.computeRank >= 4 ? DEVICE_TRAIT_BASES.premiumDual : DEVICE_TRAIT_BASES.midDual) };
+    } else if (device.formFactor === "clamshell") {
+      traits = { ...(device.computeRank >= 2 ? DEVICE_TRAIT_BASES.midClamshell : DEVICE_TRAIT_BASES.retroClamshell) };
+    } else if (device.formFactor === "vertical") {
+      traits = { ...(device.computeRank >= 2 ? DEVICE_TRAIT_BASES.verticalAndroid : DEVICE_TRAIT_BASES.retroVertical) };
+    } else if (familyText.includes("cube") || familyText.includes("rgb30")) {
+      traits = { ...(device.computeRank >= 2 ? DEVICE_TRAIT_BASES.squareAndroid : DEVICE_TRAIT_BASES.retroSquare) };
+    } else if (familyText.includes("x55")) {
+      traits = { ...DEVICE_TRAIT_BASES.linuxLarge };
+    } else if (device.computeRank >= 4) {
+      traits = { ...DEVICE_TRAIT_BASES.premiumLarge };
+    } else if (device.computeRank === 3) {
+      traits = { ...DEVICE_TRAIT_BASES.largeAndroid };
+    } else if (device.computeRank === 2) {
+      traits = { ...DEVICE_TRAIT_BASES.midAndroid };
+    } else {
+      traits = { ...DEVICE_TRAIT_BASES.retroHorizontal };
+    }
+
+    if (familyText.includes("pocket 6") || familyText.includes("pocket 5") || familyText.includes("pocket ace")) {
+      traits = { ...traits, ...DEVICE_TRAIT_BASES.premiumPocket };
+    }
+
+    if (familyText.includes("pocket classic")) {
+      traits = { ...DEVICE_TRAIT_BASES.verticalAndroid };
+    }
+
+    if (familyText.includes("rg556") || familyText.includes("rg557")) {
+      traits = { ...DEVICE_TRAIT_BASES.largeAndroid };
+    }
+
+    return traits;
+  }
+
+  function getHardwareSourceTrust(device) {
+    if (!device) {
+      return 0.55;
+    }
+
+    if (device.specConfidence === "profile") {
+      return 0.55;
+    }
+
+    if (device.catalogSource === "official") {
+      return 0.92;
+    }
+
+    if (device.catalogSource === "collected") {
+      return 0.76;
+    }
+
+    return 0.98;
+  }
+
+  function getSourceFreshness(sourceCheckedOn, sourceTrust) {
+    if (!sourceCheckedOn) {
+      return sourceTrust >= 0.9 ? 0.72 : 0.56;
+    }
+
+    const parsed = Date.parse(sourceCheckedOn);
+    if (!Number.isFinite(parsed)) {
+      return sourceTrust >= 0.9 ? 0.72 : 0.56;
+    }
+
+    const ageDays = Math.max(0, (Date.now() - parsed) / 86400000);
+    return RULES.clamp(1 - (ageDays / 540), 0.45, 1);
+  }
+
+  function getScreenSpecText(device) {
+    return `${device && device.screenSpec ? device.screenSpec : ""}`.trim();
+  }
+
+  function getParsedScreenSizes(text) {
+    return Array.from(String(text || "").matchAll(/(\d+(?:\.\d+)?)\s*(?:in|")/gi))
+      .map((match) => Number(match[1]))
+      .filter((value) => Number.isFinite(value) && value > 0);
+  }
+
+  function getParsedPanelType(text) {
+    if (/amoled/i.test(text)) {
+      return "AMOLED";
+    }
+
+    if (/\boled\b/i.test(text)) {
+      return "OLED";
+    }
+
+    if (/ltps/i.test(text)) {
+      return "LTPS";
+    }
+
+    if (/ips/i.test(text)) {
+      return "IPS";
+    }
+
+    return null;
+  }
+
+  function getParsedScreenResolution(text) {
+    const explicitMatch = String(text || "").match(/(\d{3,4})\s*x\s*(\d{3,4})/i);
+    if (explicitMatch) {
+      return {
+        width: Number(explicitMatch[1]),
+        height: Number(explicitMatch[2])
+      };
+    }
+
+    if (/1440p/i.test(text)) {
+      return { width: 2560, height: 1440 };
+    }
+
+    if (/1080p/i.test(text)) {
+      return { width: 1920, height: 1080 };
+    }
+
+    if (/720p/i.test(text)) {
+      return { width: 1280, height: 720 };
+    }
+
+    return null;
+  }
+
+  function getPrimaryScreenSize(device) {
+    if (Number.isFinite(device.screenSizeInches) && device.screenSizeInches > 0) {
+      return device.screenSizeInches;
+    }
+
+    const parsedSizes = getParsedScreenSizes(getScreenSpecText(device));
+    return parsedSizes[0] || null;
+  }
+
+  function getSecondaryScreenSize(device) {
+    if (Number.isFinite(device.secondaryScreenSizeInches) && device.secondaryScreenSizeInches > 0) {
+      return device.secondaryScreenSizeInches;
+    }
+
+    const parsedSizes = getParsedScreenSizes(getScreenSpecText(device));
+    return parsedSizes[1] || null;
+  }
+
+  function getPrimaryScreenResolution(device) {
+    if (
+      Number.isFinite(device.screenWidthPx) &&
+      device.screenWidthPx > 0 &&
+      Number.isFinite(device.screenHeightPx) &&
+      device.screenHeightPx > 0
+    ) {
+      return {
+        width: device.screenWidthPx,
+        height: device.screenHeightPx
+      };
+    }
+
+    return getParsedScreenResolution(getScreenSpecText(device));
+  }
+
+  function getPrimaryPanelType(device) {
+    if (device.panelType) {
+      return device.panelType;
+    }
+
+    return getParsedPanelType(getScreenSpecText(device));
+  }
+
+  function getDeviceAspectRatio(device) {
+    const resolution = getPrimaryScreenResolution(device);
+    if (!resolution) {
+      return null;
+    }
+
+    const largerSide = Math.max(resolution.width, resolution.height);
+    const smallerSide = Math.min(resolution.width, resolution.height);
+    if (!Number.isFinite(largerSide) || !Number.isFinite(smallerSide) || smallerSide <= 0) {
+      return null;
+    }
+
+    return largerSide / smallerSide;
+  }
+
+  function getAspectCloseness(ratio, target, range) {
+    if (!Number.isFinite(ratio)) {
+      return 0;
+    }
+
+    return RULES.clamp(1 - (Math.abs(ratio - target) / range), 0, 1);
+  }
+
+  function hasKnownBatteryCapacity(device) {
+    return Boolean(
+      device
+      && (
+        (Number.isFinite(device.batteryMah) && device.batteryMah > 0)
+        || (Number.isFinite(device.batteryWh) && device.batteryWh > 0)
+      )
+    );
+  }
+
+  function getBatteryCapacityScore(device) {
+    if (device && Number.isFinite(device.batteryMah) && device.batteryMah > 0) {
+      return RULES.clamp(0.34 + ((device.batteryMah - 3000) / 6000), 0.32, 0.9);
+    }
+
+    if (device && Number.isFinite(device.batteryWh) && device.batteryWh > 0) {
+      return RULES.clamp(0.34 + ((device.batteryWh - 20) / 60), 0.32, 0.9);
+    }
+
+    return null;
+  }
+
+  function getBatteryCapacityLabel(device) {
+    if (device && Number.isFinite(device.batteryMah) && device.batteryMah > 0) {
+      return `${Math.round(device.batteryMah)}mAh`;
+    }
+
+    if (device && Number.isFinite(device.batteryWh) && device.batteryWh > 0) {
+      const formatted = Number.isInteger(device.batteryWh)
+        ? `${Math.round(device.batteryWh)}`
+        : `${device.batteryWh.toFixed(1).replace(/\\.0$/, "")}`;
+      return `${formatted}Wh`;
+    }
+
+    return "";
+  }
+
+  function getExplicitHardwareFieldCount(device) {
+    const screenSize = getPrimaryScreenSize(device);
+    const screenResolution = getPrimaryScreenResolution(device);
+    const panelType = getPrimaryPanelType(device);
+    let count = 0;
+
+    if (Number.isFinite(screenSize)) {
+      count += 1;
+    }
+
+    if (screenResolution) {
+      count += 1;
+    }
+
+    if (panelType) {
+      count += 1;
+    }
+
+    if (device.dualScreen || Number.isFinite(getSecondaryScreenSize(device))) {
+      count += 1;
+    }
+
+    if (hasKnownBatteryCapacity(device)) {
+      count += 1;
+    }
+
+    if (Number.isFinite(device.weightGrams) && device.weightGrams > 0) {
+      count += 1;
+    }
+
+    if (device.hallSticks === true || device.hallSticks === false) {
+      count += 1;
+    }
+
+    if (device.analogTriggers === true || device.analogTriggers === false) {
+      count += 1;
+    }
+
+    if (device.activeCooling === true || device.activeCooling === false || device.cooling) {
+      count += 1;
+    }
+
+    if (device.osFamily) {
+      count += 1;
+    }
+
+    if (Number.isFinite(device.osVersion)) {
+      count += 1;
+    }
+
+    if (device.officialOta === true || device.officialOta === false) {
+      count += 1;
+    }
+
+    if (device.touchscreen === true || device.touchscreen === false) {
+      count += 1;
+    }
+
+    return count;
+  }
+
+  function getDeviceOsFamily(device) {
+    if (device.osFamily) {
+      return device.osFamily;
+    }
+
+    const compareClass = getComparisonClass(device);
+    if (compareClass === "windows-handheld") {
+      return "Windows";
+    }
+
+    if (compareClass === "linux-retro") {
+      return "Linux";
+    }
+
+    if (compareClass === "cloud-streaming") {
+      return "Android";
+    }
+
+    return null;
+  }
+
+  function getTouchscreenData(device) {
+    if (device.touchscreen === true || device.touchscreen === false) {
+      return {
+        known: true,
+        value: Boolean(device.touchscreen)
+      };
+    }
+
+    const osFamily = getDeviceOsFamily(device);
+    if (osFamily === "Windows") {
+      return {
+        known: true,
+        value: true
+      };
+    }
+
+    return {
+      known: false,
+      value: null
+    };
+  }
+
+  function getHardwareDeviceTraitProfile(device) {
+    if (!device) {
+      return null;
+    }
+
+    const fieldCount = getExplicitHardwareFieldCount(device);
+    if (fieldCount < 2) {
+      return null;
+    }
+
+    const compareClass = getComparisonClass(device);
+    const osFamily = getDeviceOsFamily(device);
+    const touchData = getTouchscreenData(device);
+    const screenSize = getPrimaryScreenSize(device);
+    const secondaryScreenSize = getSecondaryScreenSize(device);
+    const screenResolution = getPrimaryScreenResolution(device);
+    const aspectRatio = getDeviceAspectRatio(device);
+    const panelType = getPrimaryPanelType(device);
+    const screenSizeScore = Number.isFinite(screenSize)
+      ? RULES.clamp((screenSize - 3.5) / 3.5, 0, 1)
+      : 0.42;
+    const wideAspectScore = Number.isFinite(aspectRatio)
+      ? getAspectCloseness(aspectRatio, 16 / 9, 0.75)
+      : 0.42;
+    const retroAspectScore = Number.isFinite(aspectRatio)
+      ? Math.max(
+        getAspectCloseness(aspectRatio, 4 / 3, 0.45),
+        getAspectCloseness(aspectRatio, 1, 0.28) * 0.96,
+        getAspectCloseness(aspectRatio, 3 / 2, 0.4) * 0.84
+      )
+      : 0.5;
+    const panelBonus = panelType
+      ? (/amoled|oled/i.test(panelType) ? 0.05 : /ltps/i.test(panelType) ? 0.04 : 0.02)
+      : 0;
+    const refreshBonus = Number.isFinite(device.refreshRateHz)
+      ? (device.refreshRateHz >= 120 ? 0.08 : device.refreshRateHz >= 90 ? 0.05 : device.refreshRateHz >= 75 ? 0.03 : 0)
+      : 0;
+    const resolutionBonus = screenResolution
+      ? (Math.max(screenResolution.width, screenResolution.height) >= 1600 ? 0.05 : Math.max(screenResolution.width, screenResolution.height) >= 1200 ? 0.03 : 0.02)
+      : 0;
+    const dualScreen = device.dualScreen || Number.isFinite(secondaryScreenSize) ? 1 : 0;
+    const retroSizeScore = Number.isFinite(screenSize)
+      ? (screenSize <= 3.6 ? 0.92 : screenSize <= 4.1 ? 1 : screenSize <= 4.8 ? 0.84 : screenSize <= 5.6 ? 0.64 : 0.4)
+      : 0.72;
+    let bigScreen = RULES.clamp((screenSizeScore * 0.62) + 0.26 + (wideAspectScore * 0.12) + panelBonus + refreshBonus + resolutionBonus, 0, 1);
+    let retroScreen = RULES.clamp((retroAspectScore * 0.55) + (retroSizeScore * 0.35) + (panelBonus * 0.35) + (resolutionBonus * 0.5), 0, 1);
+    let sticks = device.hallSticks
+      ? 0.84
+      : compareClass === "windows-handheld"
+        ? 0.84
+        : compareClass === "cloud-streaming"
+          ? 0.78
+          : (device.computeRank || 1) >= 3
+            ? 0.72
+            : (device.computeRank || 1) >= 2
+              ? 0.62
+              : 0.42;
+    let dpad = 0.58;
+    let portability = 0.62;
+    let battery = 0.56;
+    let software = compareClass === "windows-handheld"
+      ? 0.78
+      : compareClass === "cloud-streaming"
+        ? 0.74
+        : compareClass === "linux-retro"
+          ? 0.62
+          : 0.7;
+
+    if (device.analogTriggers) {
+      sticks += 0.08;
+      dpad -= compareClass === "linux-retro" ? 0 : 0.04;
+    }
+
+    if (device.formFactor === "vertical") {
+      sticks -= 0.24;
+      dpad += 0.18;
+      retroScreen += 0.04;
+      bigScreen -= 0.04;
+      portability += 0.06;
+    } else if (device.formFactor === "clamshell") {
+      sticks -= 0.14;
+      dpad += 0.1;
+      portability += 0.08;
+    }
+
+    if (dualScreen) {
+      sticks -= 0.08;
+      bigScreen += 0.06;
+      retroScreen = Math.max(retroScreen, 0.48);
+    }
+
+    if (device.useCaseLane === "retro-focused") {
+      sticks -= 0.1;
+      dpad += 0.12;
+    }
+
+    if (compareClass === "linux-retro") {
+      sticks -= 0.06;
+      dpad += 0.14;
+    }
+
+    if (compareClass === "windows-handheld") {
+      portability -= 0.1;
+    } else if (compareClass === "cloud-streaming") {
+      portability -= 0.02;
+    }
+
+    if (Number.isFinite(screenSize)) {
+      const sizePortability = RULES.clamp(1 - ((screenSize - 3.5) / 3.8), 0.45, 1);
+      portability = (portability * 0.35) + (sizePortability * 0.65);
+    }
+
+    if (Number.isFinite(device.weightGrams) && device.weightGrams > 0) {
+      const weightPortability = RULES.clamp(1 - ((device.weightGrams - 180) / 340), 0.35, 1);
+      portability = (portability * 0.55) + (weightPortability * 0.45);
+    }
+
+    const batteryCapacityScore = getBatteryCapacityScore(device);
+    if (batteryCapacityScore !== null) {
+      battery = batteryCapacityScore;
+    }
+
+    if (compareClass === "linux-retro" || osFamily === "Linux" || osFamily === "SteamOS") {
+      battery += 0.18;
+    } else if (compareClass === "cloud-streaming") {
+      battery += 0.14;
+    } else if (compareClass === "windows-handheld") {
+      battery -= 0.16;
+    }
+
+    if ((device.computeRank || 1) <= 1) {
+      battery += 0.08;
+    } else if ((device.computeRank || 1) >= 4) {
+      battery -= 0.05;
+    }
+
+    if (device.activeCooling) {
+      battery -= 0.03;
+      software += 0.03;
+    }
+
+    if (Number.isFinite(screenSize) && screenSize >= 6.5) {
+      battery -= 0.03;
+    }
+
+    if (device.officialOta === true) {
+      software += 0.12;
+    } else if (device.officialOta === false) {
+      software -= 0.05;
+    }
+
+    if (Number.isFinite(device.osVersion)) {
+      if (device.osVersion >= 15) {
+        software += 0.08;
+      } else if (device.osVersion >= 14) {
+        software += 0.06;
+      } else if (device.osVersion >= 13) {
+        software += 0.04;
+      } else if (device.osVersion >= 11) {
+        software += 0.02;
+      } else {
+        software -= 0.03;
+      }
+    }
+
+    const sourceTrust = getHardwareSourceTrust(device);
+    const sourceFreshness = getSourceFreshness(device.sourceCheckedOn, sourceTrust);
+    if (sourceTrust < 0.7) {
+      software -= 0.08;
+    }
+
+    if (sourceFreshness < 0.7) {
+      software -= 0.05;
+    }
+
+    const hardwareCoverage = RULES.clamp(fieldCount / 10, 0, 1);
+    return {
+      bigScreen: RULES.clamp(bigScreen, 0, 1),
+      retroScreen: RULES.clamp(retroScreen, 0, 1),
+      dualScreen: RULES.clamp(dualScreen, 0, 1),
+      sticks: RULES.clamp(sticks, 0, 1),
+      dpad: RULES.clamp(dpad, 0, 1),
+      portability: RULES.clamp(portability, 0, 1),
+      battery: RULES.clamp(battery, 0, 1),
+      software: RULES.clamp(software, 0, 1),
+      touch: touchData.value,
+      touchKnown: touchData.known,
+      hardwareFieldCount: fieldCount,
+      hardwareCoverage,
+      sourceTrust,
+      sourceFreshness,
+      hardwareBlend: RULES.clamp(hardwareCoverage * sourceTrust, 0, 1),
+      sourceCheckedOn: device.sourceCheckedOn || null
+    };
+  }
+
+  function blendTraitValue(baseValue, nextValue, mix) {
+    if (!Number.isFinite(nextValue)) {
+      return baseValue;
+    }
+
+    if (!Number.isFinite(baseValue)) {
+      return nextValue;
+    }
+
+    return (baseValue * (1 - mix)) + (nextValue * mix);
+  }
+
+  function getDeviceTraitProfile(device) {
+    if (!device) {
+      return null;
+    }
+
+    const heuristicTraits = getHeuristicDeviceTraitProfile(device);
+    const hardwareTraits = getHardwareDeviceTraitProfile(device);
+    const traits = { ...heuristicTraits };
+
+    if (hardwareTraits) {
+      const mix = hardwareTraits.hardwareBlend;
+      ["bigScreen", "retroScreen", "dualScreen", "sticks", "dpad", "portability", "battery", "software"].forEach((key) => {
+        traits[key] = blendTraitValue(heuristicTraits[key], hardwareTraits[key], mix);
+      });
+
+      if (hardwareTraits.touchKnown) {
+        traits.touch = hardwareTraits.touch;
+      }
+    }
+
+    Object.assign(traits, DEVICE_TRAIT_OVERRIDES[device.id] || {});
+
+    return {
+      ...traits,
+      profileLabel: traits.profileLabel || traits.label,
+      touch: Boolean(traits.touch),
+      hardwareCoverage: hardwareTraits ? hardwareTraits.hardwareCoverage : 0,
+      hardwareFieldCount: hardwareTraits ? hardwareTraits.hardwareFieldCount : 0,
+      sourceTrust: hardwareTraits ? hardwareTraits.sourceTrust : getHardwareSourceTrust(device),
+      sourceFreshness: hardwareTraits ? hardwareTraits.sourceFreshness : getSourceFreshness(device.sourceCheckedOn, getHardwareSourceTrust(device)),
+      hardwareBlend: hardwareTraits ? hardwareTraits.hardwareBlend : 0,
+      sourceCheckedOn: hardwareTraits ? hardwareTraits.sourceCheckedOn : (device.sourceCheckedOn || null)
+    };
+  }
+
+  function formatDecimalValue(value) {
+    if (!Number.isFinite(value)) {
+      return "";
+    }
+
+    return String(Math.round(value * 100) / 100)
+      .replace(/\.0+$/, "")
+      .replace(/(\.\d*[1-9])0+$/, "$1");
+  }
+
+  function getAspectRatioLabel(aspectRatio) {
+    if (!Number.isFinite(aspectRatio)) {
+      return null;
+    }
+
+    if (Math.abs(aspectRatio - 1) <= 0.08) {
+      return "1:1";
+    }
+
+    if (aspectRatio < 1.22) {
+      return "near square";
+    }
+
+    const knownRatios = [
+      { ratio: 5 / 4, label: "5:4" },
+      { ratio: 4 / 3, label: "4:3" },
+      { ratio: 3 / 2, label: "3:2" },
+      { ratio: 16 / 10, label: "16:10" },
+      { ratio: 16 / 9, label: "16:9" }
+    ];
+    const closest = knownRatios.reduce((best, candidate) => {
+      const distance = Math.abs(aspectRatio - candidate.ratio);
+      if (!best || distance < best.distance) {
+        return {
+          label: candidate.label,
+          distance
+        };
+      }
+
+      return best;
+    }, null);
+
+    return closest ? closest.label : null;
+  }
+
+  function getPrimaryScreenSummary(device) {
+    if (!device) {
+      return null;
+    }
+
+    const secondaryScreenSize = getSecondaryScreenSize(device);
+    const dualScreen = device.dualScreen || Number.isFinite(secondaryScreenSize);
+    const screenSize = getPrimaryScreenSize(device);
+    const panelType = getPrimaryPanelType(device);
+    const aspectLabel = getAspectRatioLabel(getDeviceAspectRatio(device));
+
+    if (dualScreen) {
+      return panelType ? `Dual ${panelType}` : "Dual screen";
+    }
+
+    const parts = [];
+    if (Number.isFinite(screenSize)) {
+      parts.push(`${formatDecimalValue(screenSize)}in`);
+    }
+
+    if (panelType) {
+      parts.push(panelType);
+    }
+
+    if (aspectLabel) {
+      parts.push(aspectLabel);
+    }
+
+    if (parts.length) {
+      return parts.join(" ");
+    }
+
+    return device.screenSpec || null;
+  }
+
+  function getSoftwareSummary(device) {
+    if (!device) {
+      return null;
+    }
+
+    const osFamily = getDeviceOsFamily(device);
+    if (!osFamily) {
+      return null;
+    }
+
+    if (osFamily === "Android") {
+      if (Number.isFinite(device.osVersion) && device.officialOta === true) {
+        return `Android ${device.osVersion} OTA`;
+      }
+
+      if (Number.isFinite(device.osVersion)) {
+        return `Android ${device.osVersion}`;
+      }
+
+      return device.officialOta === true ? "Android OTA" : "Android";
+    }
+
+    if (osFamily === "Linux") {
+      return device.officialOta === false ? "Linux community" : "Linux";
+    }
+
+    if (osFamily === "Windows") {
+      return "Windows";
+    }
+
+    return osFamily;
+  }
+
+  function getSystemCompatibilityProfile(systemId) {
+    return SYSTEM_COMPATIBILITY_PROFILES[systemId] || SYSTEM_COMPATIBILITY_PROFILES.default;
+  }
+
+  function getWideScreenFitRatio(device, traits) {
+    const aspectRatio = getDeviceAspectRatio(device);
+    const screenSize = getPrimaryScreenSize(device);
+    const aspectFit = Number.isFinite(aspectRatio)
+      ? Math.max(
+        getAspectCloseness(aspectRatio, 16 / 9, 0.75),
+        getAspectCloseness(aspectRatio, 16 / 10, 0.5) * 0.94
+      )
+      : RULES.clamp((traits.bigScreen * 0.72) + ((1 - traits.retroScreen) * 0.28), 0, 1);
+    const sizeFit = Number.isFinite(screenSize)
+      ? RULES.clamp((screenSize - 4) / 2.5, 0.35, 1)
+      : traits.bigScreen;
+
+    return RULES.clamp((aspectFit * 0.58) + (sizeFit * 0.42), 0, 1);
+  }
+
+  function getRetroScreenFitRatio(device, traits) {
+    const aspectRatio = getDeviceAspectRatio(device);
+    const screenSize = getPrimaryScreenSize(device);
+    const aspectFit = Number.isFinite(aspectRatio)
+      ? Math.max(
+        getAspectCloseness(aspectRatio, 4 / 3, 0.45),
+        getAspectCloseness(aspectRatio, 1, 0.28) * 0.96,
+        getAspectCloseness(aspectRatio, 3 / 2, 0.4) * 0.84
+      )
+      : traits.retroScreen;
+    const sizeFit = Number.isFinite(screenSize)
+      ? (screenSize <= 4.1 ? 1 : screenSize <= 4.8 ? 0.84 : screenSize <= 5.6 ? 0.64 : 0.42)
+      : traits.retroScreen;
+
+    return RULES.clamp((aspectFit * 0.7) + (sizeFit * 0.3), 0, 1);
+  }
+
+  function getDualScreenFitRatio(device, traits) {
+    if (device.dualScreen) {
+      return 1;
+    }
+
+    const touchData = getTouchscreenData(device);
+    const screenSize = getPrimaryScreenSize(device);
+    const largeTouchScore = touchData.value
+      ? Number.isFinite(screenSize)
+        ? RULES.clamp(0.34 + ((screenSize - 4) / 3), 0.42, 0.8)
+        : 0.58
+      : 0.16;
+
+    return RULES.clamp(Math.max(traits.dualScreen * 0.72, largeTouchScore), 0, 1);
+  }
+
+  function getStickControlFitRatio(device, traits, analogNeed = false) {
+    let value = traits.sticks;
+
+    if (device.hallSticks) {
+      value += 0.05;
+    }
+
+    if (device.analogTriggers) {
+      value += analogNeed ? 0.1 : 0.05;
+    } else if (analogNeed) {
+      value -= 0.14;
+    }
+
+    if (device.formFactor === "vertical") {
+      value -= 0.08;
+    }
+
+    return RULES.clamp(value, 0, 1);
+  }
+
+  function getDpadControlFitRatio(device, traits) {
+    let value = traits.dpad;
+
+    if (device.formFactor === "vertical") {
+      value += 0.04;
+    }
+
+    return RULES.clamp(value, 0, 1);
+  }
+
+  function getSystemScreenCompatibilityRatio(device, traits, profile) {
+    if (profile.screenTarget === "retro") {
+      return getRetroScreenFitRatio(device, traits);
+    }
+
+    if (profile.screenTarget === "retro-balanced") {
+      return RULES.clamp((getRetroScreenFitRatio(device, traits) * 0.62) + (getWideScreenFitRatio(device, traits) * 0.38), 0, 1);
+    }
+
+    if (profile.screenTarget === "wide") {
+      return getWideScreenFitRatio(device, traits);
+    }
+
+    if (profile.screenTarget === "wide-large") {
+      return RULES.clamp((getWideScreenFitRatio(device, traits) * 0.72) + (traits.bigScreen * 0.28), 0, 1);
+    }
+
+    if (profile.screenTarget === "dual") {
+      return getDualScreenFitRatio(device, traits);
+    }
+
+    if (profile.screenTarget === "dual-large") {
+      return RULES.clamp((getDualScreenFitRatio(device, traits) * 0.78) + (traits.bigScreen * 0.22), 0, 1);
+    }
+
+    return RULES.clamp(((traits.bigScreen + traits.retroScreen) / 2) * 0.84 + (getWideScreenFitRatio(device, traits) * 0.08) + (getRetroScreenFitRatio(device, traits) * 0.08), 0, 1);
+  }
+
+  function getSystemControlCompatibilityRatio(device, traits, profile) {
+    if (profile.controlTarget === "dpad") {
+      return getDpadControlFitRatio(device, traits);
+    }
+
+    if (profile.controlTarget === "stick") {
+      return getStickControlFitRatio(device, traits, profile.analogNeed);
+    }
+
+    if (profile.controlTarget === "dpad-balanced") {
+      return RULES.clamp((getDpadControlFitRatio(device, traits) * 0.56) + (getStickControlFitRatio(device, traits, profile.analogNeed) * 0.44), 0, 1);
+    }
+
+    return RULES.clamp((getStickControlFitRatio(device, traits, profile.analogNeed) * 0.56) + (getDpadControlFitRatio(device, traits) * 0.44), 0, 1);
+  }
+
+  function getSystemTouchCompatibilityRatio(device, profile) {
+    const touchData = getTouchscreenData(device);
+
+    if (profile.touchNeed === "required") {
+      return touchData.value ? 1 : 0.12;
+    }
+
+    if (profile.touchNeed === "prefer") {
+      return touchData.value ? 1 : 0.58;
+    }
+
+    if (touchData.known && !touchData.value) {
+      return 1;
+    }
+
+    return touchData.value ? 0.88 : 0.94;
+  }
+
+  function getSystemFormFactorCompatibilityRatio(device, profile) {
+    if (!profile.formFactorNeed) {
+      return 1;
+    }
+
+    const dualScreen = Boolean(device.dualScreen || Number.isFinite(getSecondaryScreenSize(device)));
+    const clamshell = device.formFactor === "clamshell";
+    const touchData = getTouchscreenData(device);
+    const primaryScreenSize = getPrimaryScreenSize(device);
+    const largeTouchScreen = touchData.value && Number.isFinite(primaryScreenSize) && primaryScreenSize >= 6;
+
+    if (profile.formFactorNeed === "clamshell-prefer") {
+      if (dualScreen && clamshell) {
+        return 1;
+      }
+
+      if (dualScreen) {
+        return 0.88;
+      }
+
+      if (clamshell) {
+        return 0.62;
+      }
+
+      if (largeTouchScreen) {
+        return 0.42;
+      }
+
+      return touchData.value ? 0.32 : 0.2;
+    }
+
+    if (profile.formFactorNeed === "clamshell-strong") {
+      if (dualScreen && clamshell) {
+        return 1;
+      }
+
+      if (dualScreen) {
+        return 0.8;
+      }
+
+      if (clamshell) {
+        return 0.56;
+      }
+
+      if (largeTouchScreen) {
+        return 0.32;
+      }
+
+      return touchData.value ? 0.24 : 0.14;
+    }
+
+    return 1;
+  }
+
+  function getSystemSoftwareCompatibilityRatio(traits, profile) {
+    return RULES.clamp(1 - (Math.max(0, profile.softwareNeed - traits.software) * 1.45), 0.12, 1);
+  }
+
+  function getCompatibilityEntryWeight(entry) {
+    const countWeight = RULES.libraryScale(entry.effectiveCount || entry.count || 1);
+    return countWeight * Math.max(0.75, entry.performanceWeight || 1);
+  }
+
+  function getSystemCompatibilityDetails(device, entry) {
+    const traits = getDeviceTraitProfile(device);
+    const profile = getSystemCompatibilityProfile(entry.id);
+    const screenRatio = getSystemScreenCompatibilityRatio(device, traits, profile);
+    const controlsRatio = getSystemControlCompatibilityRatio(device, traits, profile);
+    const touchRatio = getSystemTouchCompatibilityRatio(device, profile);
+    const formFactorRatio = getSystemFormFactorCompatibilityRatio(device, profile);
+    const softwareRatio = getSystemSoftwareCompatibilityRatio(traits, profile);
+    const portabilityRatio = getScalarFitRatio(traits.portability, profile.portabilityTarget);
+    const ratio = profile.formFactorNeed
+      ? RULES.clamp(
+        (screenRatio * 0.24)
+        + (controlsRatio * 0.22)
+        + (softwareRatio * 0.18)
+        + (touchRatio * 0.08)
+        + (portabilityRatio * 0.08)
+        + (formFactorRatio * 0.2),
+        0,
+        1
+      )
+      : RULES.clamp(
+        (screenRatio * 0.3)
+        + (controlsRatio * 0.28)
+        + (softwareRatio * 0.24)
+        + (touchRatio * 0.08)
+        + (portabilityRatio * 0.1),
+        0,
+        1
+      );
+
+    return {
+      id: entry.id,
+      name: entry.name,
+      screenRatio,
+      controlsRatio,
+      touchRatio,
+      formFactorRatio,
+      softwareRatio,
+      portabilityRatio,
+      ratio,
+      weight: getCompatibilityEntryWeight(entry),
+      formFactorRelevant: Boolean(profile.formFactorNeed)
+    };
+  }
+
+  function getLibraryCompatibilitySummary(device, breakdown) {
+    if (!device || !breakdown.length) {
+      return {
+        ratio: 1,
+        entries: [],
+        strongest: [],
+        weakest: []
+      };
+    }
+
+    const entries = breakdown.map((entry) => getSystemCompatibilityDetails(device, entry));
+    const totalWeight = entries.reduce((total, entry) => total + entry.weight, 0);
+    const ratio = totalWeight
+      ? entries.reduce((total, entry) => total + (entry.ratio * entry.weight), 0) / totalWeight
+      : 1;
+    const importanceSort = (left, right) => {
+      if (right.weight !== left.weight) {
+        return right.weight - left.weight;
+      }
+
+      return right.ratio - left.ratio;
+    };
+
+    return {
+      ratio: RULES.clamp(ratio, 0, 1),
+      entries,
+      strongest: [...entries]
+        .filter((entry) => entry.ratio >= 0.76)
+        .sort((left, right) => {
+          if (right.ratio !== left.ratio) {
+            return right.ratio - left.ratio;
+          }
+
+          return importanceSort(left, right);
+        })
+        .slice(0, 2),
+      weakest: [...entries]
+        .filter((entry) => entry.ratio <= 0.62)
+        .sort((left, right) => {
+          if (left.ratio !== right.ratio) {
+            return left.ratio - right.ratio;
+          }
+
+          return importanceSort(left, right);
+        })
+        .slice(0, 2)
+    };
+  }
+
+  function getLibraryFormFactorSummary(compatibility) {
+    if (!compatibility || !compatibility.entries || !compatibility.entries.length) {
+      return null;
+    }
+
+    const relevantEntries = compatibility.entries.filter((entry) => entry.formFactorRelevant);
+    if (!relevantEntries.length) {
+      return null;
+    }
+
+    const totalWeight = relevantEntries.reduce((total, entry) => total + entry.weight, 0);
+    const ratio = totalWeight
+      ? relevantEntries.reduce((total, entry) => total + (entry.formFactorRatio * entry.weight), 0) / totalWeight
+      : 1;
+
+    return {
+      ratio: RULES.clamp(ratio, 0, 1),
+      entries: relevantEntries
+    };
+  }
+
+  function buildCompatibilityStrengthLine(compatibility) {
+    if (!compatibility || compatibility.ratio < 0.76 || !compatibility.strongest.length) {
+      return "";
+    }
+
+    if (compatibility.strongest.some((entry) => entry.formFactorRelevant)) {
+      return `${formatJoinedList(compatibility.strongest.map((entry) => entry.name))} line up especially well with this screen, control, form factor, and software setup.`;
+    }
+
+    return `${formatJoinedList(compatibility.strongest.map((entry) => entry.name))} line up especially well with this screen, control, and software setup.`;
+  }
+
+  function buildCompatibilityCautionLine(compatibility) {
+    if (!compatibility || compatibility.ratio > 0.68 || !compatibility.weakest.length) {
+      return "";
+    }
+
+    const weakestNames = formatJoinedList(compatibility.weakest.map((entry) => entry.name));
+    if (compatibility.weakest.some((entry) => entry.id === "ds" || entry.id === "3ds")) {
+      return `${weakestNames} fit less naturally here because dual screen, clamshell form factor, and touch layout matter more.`;
+    }
+
+    return `${weakestNames} fit less cleanly here once screen shape, controls, and software overhead are counted.`;
+  }
+
+  function normalizeRatio(value, fallback = 0.72) {
+    if (!Number.isFinite(value)) {
+      return fallback;
+    }
+
+    return RULES.clamp(value, 0, 1);
+  }
+
+  function getScreenFitRatio(traits, accuracy) {
+    const weights = {
+      big: Math.max(0.12, accuracy.targets.screenBig),
+      retro: Math.max(0.12, accuracy.targets.screenRetro),
+      dual: Math.max(0.08, accuracy.targets.dualScreen)
+    };
+    const totalWeight = weights.big + weights.retro + weights.dual;
+    return normalizeRatio(
+      ((traits.bigScreen * weights.big) + (traits.retroScreen * weights.retro) + (traits.dualScreen * weights.dual)) / totalWeight
+    );
+  }
+
+  function getControlFitRatio(traits, accuracy) {
+    const stickWeight = Math.max(0.15, accuracy.targets.sticks);
+    const dpadWeight = Math.max(0.15, accuracy.targets.dpad);
+    return normalizeRatio(
+      ((traits.sticks * stickWeight) + (traits.dpad * dpadWeight)) / (stickWeight + dpadWeight)
+    );
+  }
+
+  function getScalarFitRatio(actual, target) {
+    return normalizeRatio(1 - Math.abs(actual - target));
+  }
+
+  function getTouchFitRatio(traits, accuracy) {
+    if (state.touchPreference === "required") {
+      return traits.touch ? 1 : 0;
+    }
+
+    if (state.touchPreference === "avoid") {
+      return traits.touch ? 0.35 : 1;
+    }
+
+    if (accuracy.targets.touch >= 0.52) {
+      return traits.touch ? 1 : 0.28;
+    }
+
+    return traits.touch ? 0.9 : 0.78;
+  }
+
+  function getExperienceFitBreakdown(device, accuracy) {
+    const traits = getDeviceTraitProfile(device);
+    const screenRatio = getScreenFitRatio(traits, accuracy);
+    const controlsRatio = getControlFitRatio(traits, accuracy);
+    const portabilityRatio = getScalarFitRatio(traits.portability, accuracy.targets.portability);
+    const batteryRatio = getScalarFitRatio(traits.battery, accuracy.targets.battery);
+    const softwareRatio = getScalarFitRatio(traits.software, accuracy.targets.software);
+    const touchRatio = getTouchFitRatio(traits, accuracy);
+    const screen = screenRatio * EXPERIENCE_SCORE_WEIGHTS.screen;
+    const controls = controlsRatio * EXPERIENCE_SCORE_WEIGHTS.controls;
+    const portability = portabilityRatio * EXPERIENCE_SCORE_WEIGHTS.portability;
+    const battery = batteryRatio * EXPERIENCE_SCORE_WEIGHTS.battery;
+    const software = softwareRatio * EXPERIENCE_SCORE_WEIGHTS.software;
+    const touch = touchRatio * EXPERIENCE_SCORE_WEIGHTS.touch;
+
+    return {
+      traits,
+      screen,
+      controls,
+      portability,
+      battery,
+      software,
+      touch,
+      total: screen + controls + portability + battery + software + touch
+    };
+  }
+
+  function buildExperienceNotes(breakdown) {
+    const positives = [];
+    const cautions = [];
+
+    if (breakdown.screen >= EXPERIENCE_SCORE_WEIGHTS.screen * 0.78) {
+      positives.push("Screen shape lines up well with your selected library.");
+    } else if (breakdown.screen <= EXPERIENCE_SCORE_WEIGHTS.screen * 0.42) {
+      cautions.push("Screen fit is only average for the way you plan to use it.");
+    }
+
+    if (breakdown.controls >= EXPERIENCE_SCORE_WEIGHTS.controls * 0.76) {
+      positives.push("Control layout matches the way you said you play.");
+    } else if (breakdown.controls <= EXPERIENCE_SCORE_WEIGHTS.controls * 0.42) {
+      cautions.push("Control layout is a weaker match for your stated play style.");
+    }
+
+    if (breakdown.portability >= EXPERIENCE_SCORE_WEIGHTS.portability * 0.74) {
+      positives.push("Portability lines up well with how much carry weight you want.");
+    } else if (breakdown.portability <= EXPERIENCE_SCORE_WEIGHTS.portability * 0.38) {
+      cautions.push("Size or carry weight may feel off for your portability preference.");
+    }
+
+    if (breakdown.software <= EXPERIENCE_SCORE_WEIGHTS.software * 0.38) {
+      cautions.push("Software maturity is a weaker fit for the tolerance you picked.");
+    }
+
+    if (breakdown.touch <= EXPERIENCE_SCORE_WEIGHTS.touch * 0.35) {
+      cautions.push("Touch support does not line up cleanly with your touchscreen preference.");
+    }
+
+    return {
+      positives: positives.slice(0, 2),
+      cautions: cautions.slice(0, 2)
+    };
+  }
+
+  function buildConfidenceLabel(score) {
+    if (score >= 86) {
+      return "High confidence";
+    }
+
+    if (score >= 72) {
+      return "Good confidence";
+    }
+
+    if (score >= 58) {
+      return "Mixed confidence";
+    }
+
+    return "Limited confidence";
+  }
+
+  function analyzeRecommendationConfidence(breakdown, recommendedCandidate, accuracy, currentDevice) {
+    let score = 88;
+    const notes = [];
+    const experimentalIds = new Set(["xbox", "ps3", "switch", "wii-u"]);
+    const highFrictionIds = new Set(["3ds", "vita", "android", "pc", "saturn", "dreamcast", "arcade"]);
+    const experimentalSystems = breakdown.filter((entry) => experimentalIds.has(entry.id));
+    const highFrictionSystems = breakdown.filter((entry) => highFrictionIds.has(entry.id));
+    const recommendedTraits = recommendedCandidate ? getDeviceTraitProfile(recommendedCandidate.device) : null;
+    const recommendedCompatibility = recommendedCandidate ? recommendedCandidate.compatibility : null;
+    const currentTraits = currentDevice ? getDeviceTraitProfile(currentDevice) : null;
+
+    if (experimentalSystems.length) {
+      score -= 18 + (experimentalSystems.length * 4);
+      notes.push(`${formatJoinedList(experimentalSystems.map((entry) => entry.name))} still carry lower confidence than older emulation targets.`);
+    }
+
+    if (highFrictionSystems.length >= 2) {
+      score -= 6;
+      notes.push(`${formatJoinedList(highFrictionSystems.map((entry) => entry.name))} add extra emulator and software variability.`);
+    }
+
+    if (breakdown.length >= 6) {
+      score -= 4;
+      notes.push("Large mixed libraries are harder to fit perfectly with one device.");
+    }
+
+    if (state.softwarePreference === "stable" && accuracy.targets.software >= 0.7) {
+      score -= 3;
+    }
+
+    if (currentDevice && !currentDevice.inLivePool) {
+      score -= 4;
+      notes.push(currentDevice.specConfidence === "profile"
+        ? "Current device comparison still uses a collected profile because that device is outside the live pool."
+        : "Current device comparison uses collected sheet data because that device is outside the live pool.");
+    }
+
+    if (!experimentalSystems.length && breakdown.length <= 3) {
+      score += 3;
+    }
+
+    if (recommendedTraits && recommendedTraits.software >= 0.78 && accuracy.targets.software >= 0.62) {
+      score += 2;
+    }
+
+    if (recommendedTraits && recommendedTraits.hardwareCoverage >= 0.72 && recommendedTraits.sourceTrust >= 0.9 && recommendedTraits.sourceFreshness >= 0.9) {
+      score += 3;
+    } else if (recommendedTraits && recommendedTraits.hardwareCoverage < 0.42) {
+      score -= 6;
+      notes.push(`${recommendedCandidate.device.name} still uses lighter hardware detail than the newest catalog entries.`);
+    }
+
+    if (recommendedTraits && recommendedTraits.sourceFreshness < 0.75) {
+      score -= 3;
+      notes.push(`${recommendedCandidate.device.name} uses older checked data than the newest refreshed listings.`);
+    }
+
+    if (recommendedCompatibility && recommendedCompatibility.ratio >= 0.82) {
+      score += 2;
+    } else if (recommendedCompatibility && recommendedCompatibility.ratio < 0.62) {
+      score -= 6;
+      if (recommendedCompatibility.weakest.length) {
+        notes.push(`${formatJoinedList(recommendedCompatibility.weakest.map((entry) => entry.name))} fit less cleanly on this handheld than the rest of your mix.`);
+      }
+    }
+
+    if (currentTraits && currentTraits.hardwareCoverage < 0.35) {
+      score -= 2;
+    }
+
+    score = RULES.clamp(score - (accuracy.confidenceRisk * 10), 40, 96);
+
+    return {
+      score,
+      label: buildConfidenceLabel(score),
+      notes: notes.slice(0, 3),
+      summary: notes[0] || "Inputs line up well with the current live pool, so confidence stays solid for this result."
+    };
+  }
+
+  function analyzeCompareConfidence(leftDevice, rightDevice, differentLane) {
+    let score = 92;
+    const notes = [];
+    const leftTraits = getDeviceTraitProfile(leftDevice);
+    const rightTraits = getDeviceTraitProfile(rightDevice);
+
+    if (!leftDevice.inLivePool) {
+      score -= 10;
+      notes.push(leftDevice.specConfidence === "profile"
+        ? `${leftDevice.name} is outside the live pool and uses a collected profile estimate.`
+        : `${leftDevice.name} is outside the live pool and uses collected sheet data.`);
+    }
+
+    if (!rightDevice.inLivePool) {
+      score -= 10;
+      notes.push(rightDevice.specConfidence === "profile"
+        ? `${rightDevice.name} is outside the live pool and uses a collected profile estimate.`
+        : `${rightDevice.name} is outside the live pool and uses collected sheet data.`);
+    }
+
+    if (differentLane) {
+      score -= 8;
+      notes.push("These devices sit in different handheld lanes, so the compare is directional.");
+    }
+
+    if (leftTraits && leftTraits.hardwareCoverage < 0.42) {
+      score -= 5;
+      notes.push(`${leftDevice.name} still uses lighter hardware detail than the newest catalog entries.`);
+    }
+
+    if (rightTraits && rightTraits.hardwareCoverage < 0.42) {
+      score -= 5;
+      notes.push(`${rightDevice.name} still uses lighter hardware detail than the newest catalog entries.`);
+    }
+
+    if (leftTraits && leftTraits.sourceFreshness < 0.75) {
+      score -= 2;
+    }
+
+    if (rightTraits && rightTraits.sourceFreshness < 0.75) {
+      score -= 2;
+    }
+
+    return {
+      score: RULES.clamp(score, 48, 96),
+      label: buildConfidenceLabel(RULES.clamp(score, 48, 96)),
+      notes: notes.slice(0, 3),
+      summary: notes[0] || "Both devices map cleanly enough for a direct compare."
+    };
+  }
+
+  function formatDeviceExperienceLabel(device) {
+    const traits = getDeviceTraitProfile(device);
+    return traits ? traits.profileLabel : "Estimated profile";
+  }
+
+  function formatDeviceScreenLabel(device) {
+    const screenSummary = getPrimaryScreenSummary(device);
+    if (screenSummary) {
+      return screenSummary;
+    }
+
+    const traits = getDeviceTraitProfile(device);
+    if (!traits) {
+      return "Unknown";
+    }
+
+    if (traits.dualScreen >= 0.8) {
+      return "Dual screen";
+    }
+
+    if (traits.bigScreen >= 0.8) {
+      return "Large screen";
+    }
+
+    if (traits.retroScreen >= 0.86) {
+      return "Retro tuned";
+    }
+
+    return "Balanced screen";
+  }
+
+  function formatDeviceControlLabel(device) {
+    if (device.hallSticks && device.analogTriggers) {
+      return "Hall sticks + analog";
+    }
+
+    if (device.hallSticks) {
+      return "Hall sticks";
+    }
+
+    if (device.analogTriggers && getComparisonClass(device) === "cloud-streaming") {
+      return "Streaming controls";
+    }
+
+    const traits = getDeviceTraitProfile(device);
+    if (!traits) {
+      return "Unknown";
+    }
+
+    if (traits.sticks - traits.dpad >= 0.16) {
+      return "Stick leaning";
+    }
+
+    if (traits.dpad - traits.sticks >= 0.16) {
+      return "D-pad leaning";
+    }
+
+    return "Balanced controls";
+  }
+
+  function formatDeviceSoftwareLabel(device) {
+    const softwareSummary = getSoftwareSummary(device);
+    if (softwareSummary) {
+      return softwareSummary;
+    }
+
+    const traits = getDeviceTraitProfile(device);
+    if (!traits) {
+      return "Estimated";
+    }
+
+    if (traits.software >= 0.8) {
+      return "Stable profile";
+    }
+
+    if (traits.software >= 0.68) {
+      return "Good profile";
+    }
+
+    return "More variable";
+  }
+
+  function renderDeviceFeatureChips(device, limit = 3) {
+    const chips = [];
+    const pushChip = (value) => {
+      if (value && !chips.includes(value)) {
+        chips.push(value);
+      }
+    };
+
+    if (device.chipset) {
+      pushChip(device.chipset);
+    }
+
+    const screenSummary = getPrimaryScreenSummary(device);
+    if (screenSummary) {
+      pushChip(screenSummary);
+    } else if (device.screenSpec) {
+      pushChip(device.screenSpec);
+    }
+
+    const batteryLabel = getBatteryCapacityLabel(device);
+    if (batteryLabel) {
+      pushChip(batteryLabel);
+    }
+
+    if (device.hallSticks) {
+      pushChip("Hall sticks");
+    }
+
+    if (device.activeCooling) {
+      pushChip("Active cooling");
+    } else if (device.cooling) {
+      pushChip(device.cooling);
+    }
+
+    const softwareSummary = getSoftwareSummary(device);
+    if (softwareSummary) {
+      pushChip(softwareSummary);
+    }
+
+    if (!chips.length) {
+      return "";
+    }
+
+    return chips
+      .slice(0, limit)
+      .map((chip) => `<span class="story-chip">${escapeHtml(chip)}</span>`)
+      .join("");
+  }
+
+  function getDeviceYear(device) {
+    if (!device) {
+      return null;
+    }
+
+    if (Number.isFinite(device.releaseYear)) {
+      return Math.round(device.releaseYear);
+    }
+
+    const explicitYearMatch = `${device.name || ""} ${device.family || ""}`.match(/\b(20\d{2})\b/);
+    if (explicitYearMatch) {
+      return Number(explicitYearMatch[1]);
+    }
+
+    return DEVICE_YEAR_OVERRIDES[device.id] || null;
+  }
+
+  function formatDeviceDisplayName(device) {
+    if (!device) {
+      return "";
+    }
+
+    const baseName = device.name || "";
+    const year = getDeviceYear(device);
+    if (!year || /\b(20\d{2})\b/.test(baseName)) {
+      return baseName;
+    }
+
+    const trailingTagMatch = baseName.match(/\(([^()]*)\)\s*$/);
+    if (trailingTagMatch) {
+      return baseName.replace(/\(([^()]*)\)\s*$/, `($1, ${year})`);
+    }
+
+    return `${baseName} (${year})`;
+  }
+
   function getHeadlineSystems(breakdown) {
     return [...breakdown]
       .sort((left, right) => (right.performanceWeight * right.count) - (left.performanceWeight * left.count))
@@ -4277,6 +8004,12 @@
       useCaseLane: state.useCaseLane,
       brandPreference: state.brandPreference,
       formFactor: state.formFactor,
+      sessionStyle: state.sessionStyle,
+      portabilityPriority: state.portabilityPriority,
+      screenPriority: state.screenPriority,
+      controlPriority: state.controlPriority,
+      softwarePreference: state.softwarePreference,
+      touchPreference: state.touchPreference,
       useSdCard: state.useSdCard,
       sdCardSizeGb: state.sdCardSizeGb,
       futureProofBias: state.futureProofBias,
@@ -4292,11 +8025,12 @@
 
   function buildFitScoreInfo() {
     return `How is Performance Score Determined?
-- ${FIT_SCORE_WEIGHTS.performance}% = how well it runs heavy stuff
+- ${FIT_SCORE_WEIGHTS.performance}% = raw power floor plus per system compatibility
 - ${FIT_SCORE_WEIGHTS.ram}% = enough RAM (smooth multitasking)
 - ${FIT_SCORE_WEIGHTS.storage}% = enough storage (space + speed)
 - ${FIT_SCORE_WEIGHTS.value}% = price vs what you get
 - ${FIT_SCORE_WEIGHTS.preference}% = preferences after lane filtering (brand first, then form factor)
+- ${FIT_SCORE_WEIGHTS.experience}% = screen fit, controls, portability, battery, software, and touch fit
 
 Score Guideline
 - 90-100 = amazing
@@ -4305,17 +8039,21 @@ Score Guideline
 - below 60 = bad
 
 This is based on your Games selected and not neccasarily highest system.
-Low End Retro uses lighter RAM and storage checks when the selected systems stay in that lane.`;
+Low End Retro uses lighter RAM and storage checks when the selected systems stay in that lane.
+System compatibility now also checks things like screen shape, controls, touch needs, and software overhead for the systems you picked.`;
   }
 
   function buildFitScoreBreakdownInfo(scoreBreakdown) {
     return `Performance Score Breakdown
 
-- Heavy Systems = ${scoreBreakdown.performance}/${FIT_SCORE_WEIGHTS.performance}
+- System Fit = ${scoreBreakdown.performance}/${FIT_SCORE_WEIGHTS.performance}
+- Raw power floor = ${Math.round(scoreBreakdown.performanceBase * 10) / 10}/${FIT_SCORE_WEIGHTS.performance}
+- Per system compatibility = ${Math.round(scoreBreakdown.performanceCompatibility * 10) / 10}/${FIT_SCORE_WEIGHTS.performance}
 - RAM = ${scoreBreakdown.ram}/${FIT_SCORE_WEIGHTS.ram}
 - Storage = ${scoreBreakdown.storage}/${FIT_SCORE_WEIGHTS.storage}
 - Price vs Value = ${scoreBreakdown.value}/${FIT_SCORE_WEIGHTS.value}
 - Preferences = ${scoreBreakdown.preference}/${FIT_SCORE_WEIGHTS.preference}
+- Experience = ${scoreBreakdown.experience}/${FIT_SCORE_WEIGHTS.experience}
 
 Total = ${scoreBreakdown.total}/100`;
   }
@@ -4338,6 +8076,7 @@ Total = ${scoreBreakdown.total}/100`;
         "Compare Devices",
         `Headline: ${analysis.headline}`,
         `Verdict: ${analysis.verdict}`,
+        `Confidence: ${analysis.confidence.label}`,
         `Left Device: ${analysis.leftDevice.name}`,
         `Right Device: ${analysis.rightDevice.name}`,
         ""
@@ -4370,14 +8109,15 @@ Total = ${scoreBreakdown.total}/100`;
       ? [
         "",
         "Compared to your current device",
-        `${analysis.currentComparison.currentDevice.name} vs ${analysis.currentComparison.recommendedDevice.name}`,
+        `${formatDeviceDisplayName(analysis.currentComparison.currentDevice)} vs ${formatDeviceDisplayName(analysis.currentComparison.recommendedDevice)}`,
         `${capitalizeWords(analysis.currentComparison.classification)}: ${analysis.currentComparison.explanation}`
       ]
       : [];
 
     lines.push("Which Handheld Should I Buy?");
     lines.push("");
-    lines.push(`Recommended Device: ${analysis.keepCurrent && analysis.currentComparison ? `Keep your current ${analysis.currentComparison.currentDevice.name}` : recommendedCandidate.device.name}`);
+    lines.push(`Recommended Device: ${analysis.keepCurrent && analysis.currentComparison ? `Keep your current ${formatDeviceDisplayName(analysis.currentComparison.currentDevice)}` : formatDeviceDisplayName(recommendedCandidate.device)}`);
+    lines.push(`Confidence: ${analysis.confidence.label}`);
     lines.push(`Local Price: ${getRecommendedPriceLabel(analysis, recommendedCandidate.device)}`);
     lines.push(`Estimated RAM Need: ${analysis.performance.recommendedRam}GB recommended, ${analysis.performance.minimumRam}GB minimum acceptable`);
     lines.push(`Estimated Storage Need: ${formatSize(analysis.storage.minimumLikely)} minimum likely, ${formatSize(analysis.storage.expectedAverage)} expected average, ${formatSize(analysis.storage.comfortableUpper)} comfortable upper`);
@@ -4415,8 +8155,8 @@ Total = ${scoreBreakdown.total}/100`;
     }
 
     lines.push("");
-    lines.push(`Budget Alternative: ${analysis.scoring.budgetAlternative ? analysis.scoring.budgetAlternative.device.name : "None"}`);
-    lines.push(`Future Proof Option: ${analysis.scoring.futureProofOption ? analysis.scoring.futureProofOption.device.name : "None"}`);
+    lines.push(`Budget Alternative: ${analysis.scoring.budgetAlternative ? formatDeviceDisplayName(analysis.scoring.budgetAlternative.device) : "None"}`);
+    lines.push(`Future Proof Option: ${analysis.scoring.futureProofOption ? formatDeviceDisplayName(analysis.scoring.futureProofOption.device) : "None"}`);
     lines.push(...currentSection);
 
     return lines.join("\n");

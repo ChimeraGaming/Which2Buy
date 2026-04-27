@@ -1749,6 +1749,12 @@ body:not([data-format="simple"]) .section-summary {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.accuracy-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .simple-only-control {
   display: none;
 }
@@ -2732,6 +2738,46 @@ body:not([data-format="simple"]) .section-summary {
     var(--panel);
 }
 
+.roadmap-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.roadmap-card {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--surface-2), transparent), var(--panel-strong);
+}
+
+.roadmap-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.roadmap-card h3 {
+  font-size: 1.05rem;
+}
+
+.roadmap-card p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .breakdown-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
@@ -2925,7 +2971,8 @@ body[data-format="simple"] .field {
   gap: 10px;
 }
 
-body[data-format="simple"] .preferences-grid {
+body[data-format="simple"] .preferences-grid,
+body[data-format="simple"] .accuracy-grid {
   max-width: 760px;
   grid-template-columns: 1fr;
 }
